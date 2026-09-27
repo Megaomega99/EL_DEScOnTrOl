@@ -96,3 +96,16 @@ def test_same_seeds_give_identical_trajectories():
         task.close()
     np.testing.assert_array_equal(a.states, b.states)
     assert a.states.shape != c.states.shape or not np.array_equal(a.states, c.states)
+
+
+def test_fraction_at_force_limit_counts_controllers_that_clip_internally(task):
+    """Un controlador que ya entrega ±F_max nunca activa `saturated` (no se le recorta nada),
+    pero SÍ está en el límite del actuador: la métrica física debe contarlo."""
+    traj = run_episode(task, ConstantForce(10.0), initial_state=np.zeros(4))
+    assert not traj.saturated.any()
+    assert traj.fraction_at_force_limit == 1.0
+
+
+def test_fraction_at_force_limit_is_zero_for_gentle_control(task):
+    traj = run_episode(task, ConstantForce(0.0), initial_state=np.zeros(4))
+    assert traj.fraction_at_force_limit == 0.0 and traj.force_limit == task.params.force_mag

@@ -22,6 +22,7 @@ from cartpole_lab.disturbances import ForcePulse
 from cartpole_lab.controllers.pid_tuning import (
     TuningConfig,
     closed_loop_spectral_radius,
+    itae_cost,
     p_only_angle_spectral_radius,
     sample_tuning_initial_states,
     simulate_pid_batch,
@@ -29,6 +30,7 @@ from cartpole_lab.controllers.pid_tuning import (
 )
 from cartpole_lab.env import CartPoleTask
 from cartpole_lab.rollout import run_episode
+from cartpole_lab.sanity import UNRECOVERABLE_INITIAL_STATES
 
 # Ganancias de prueba fijas (no sintonizadas): solo para verificar la mecánica de la ley.
 GAINS = PIDGains(kp_theta=30.0, ki_theta=1.0, kd_theta=8.0, kp_x=0.03, kd_x=0.07)
@@ -180,6 +182,24 @@ def test_batch_simulator_reproduces_the_gymnasium_rollout(params, initial_state)
     np.testing.assert_array_equal(batch.forces[:n], traj.forces)
 
 
+def test_itae_of_a_real_trajectory_matches_the_batch_objective(params):
+    """El criterio calculado sobre trayectorias reales (para comparar con otros métodos)
+    es el mismo número que minimizó el optimizador, incluidos los episodios fallidos."""
+    config = TuningConfig()
+    initial_states = [[0.3, 0.0, 0.08, 0.0], [0.0, 0.0, 0.15, 2.0], [1.5, 1.0, 0.0, 0.0]]
+    task = CartPoleTask(action_mode="continuous")
+    try:
+        for s0 in initial_states:
+            batch = simulate_pid_batch(GAINS, np.array(s0), params, n_steps=config.n_steps, theta_ref_limit=LIMIT)
+            traj = run_episode(task, CascadePID(GAINS, params, theta_ref_limit=LIMIT), initial_state=s0)
+            expected = float(batch.itae + config.effort_weight * batch.effort)
+            # No es igualdad exacta: traj.states son observaciones (redondeadas a float32) y el
+            # lote mide el error sobre el estado interno float64. Diferencia observada ~1e-10.
+            assert itae_cost(traj, params, config) == pytest.approx(expected, rel=1e-6)
+    finally:
+        task.close()
+
+
 def test_tuning_initial_states_are_reproducible_and_inside_the_box():
     config = TuningConfig()
     a, b = sample_tuning_initial_states(config), sample_tuning_initial_states(config)
@@ -306,22 +326,18 @@ def test_tuned_pid_recovers_the_worst_corner_of_the_tuning_box(tuned, params):
     assert abs(traj.states[-1, 0]) < 0.05 and abs(traj.states[-1, 2]) < np.radians(0.5)
 
 
-@pytest.mark.parametrize(
-    "extreme, reasons",
-    [
-        ([0.0, 0.0, 0.15, 2.0], {"pole_angle_limit"}),  # cae demasiado rápido
-        ([2.2, 2.0, 0.0, 0.0], {"cart_position_limit", "pole_angle_limit"}),  # carro lanzado al borde
-    ],
-)
-def test_extreme_initial_states_fail_loudly(tuned, params, extreme, reasons):
-    """Sanity check negativo: el fallo es explícito (motivo registrado), no silencioso."""
+@pytest.mark.parametrize("name", sorted(UNRECOVERABLE_INITIAL_STATES))
+def test_extreme_initial_states_fail_loudly(tuned, params, name):
+    """Sanity check negativo: el fallo es explícito (motivo registrado), no silencioso.
+    Que estos estados son irrecuperables para CUALQUIER controlador lo prueba test_sanity.py."""
     gains, _ = tuned
+    initial_state, reasons = UNRECOVERABLE_INITIAL_STATES[name]
     task = CartPoleTask(action_mode="continuous")
     try:
         traj = run_episode(
             task,
             CascadePID(gains, params, theta_ref_limit=TuningConfig().theta_ref_limit(params)),
-            initial_state=extreme,
+            initial_state=initial_state,
         )
     finally:
         task.close()
@@ -329,22 +345,12 @@ def test_extreme_initial_states_fail_loudly(tuned, params, extreme, reasons):
     assert traj.n_steps > 1 and np.all(np.isfinite(traj.states))
 
 
-def test_falling_pole_is_unrecoverable_for_any_admissible_force(params):
-    """Justifica el caso anterior: ni la fuerza máxima constante hacia el lado de la caída
-    lo evita (distancia de frenado θ̇²/(2|θ̈_max|) ≈ 0.165 rad > 0.06 rad de margen)."""
-
-    class FullPushRight:
-        action_mode = "continuous"
-
-        def reset(self):
-            pass
-
-        def __call__(self, state):
-            return params.force_mag
-
-    task = CartPoleTask(action_mode="continuous")
+def test_itae_rejects_a_truncated_episode_shorter_than_the_horizon(params):
+    """Un episodio que termina por tiempo antes del horizonte no debe contarse como fallo."""
+    task = CartPoleTask(action_mode="continuous", max_episode_steps=100)
     try:
-        traj = run_episode(task, FullPushRight(), initial_state=[0.0, 0.0, 0.15, 2.0])
+        traj = run_episode(task, CascadePID(GAINS, params, theta_ref_limit=LIMIT), initial_state=np.zeros(4))
     finally:
         task.close()
-    assert traj.termination_reason == "pole_angle_limit"
+    with pytest.raises(ValueError, match="horizontes"):
+        itae_cost(traj, params, TuningConfig())

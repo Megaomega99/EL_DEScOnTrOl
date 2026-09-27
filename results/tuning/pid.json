@@ -131,6 +131,10 @@
         1049
       ],
       "survival_rate": 1.0,
+      "stabilized_rate": 1.0,
+      "termination_reasons": {
+        "time_limit": 50
+      },
       "last_second_max_abs_theta_deg": {
         "mean": 2.6861789123430644e-06,
         "std": 2.09535783631203e-06,
@@ -141,10 +145,15 @@
         "std": 1.3041920042962576e-07,
         "max": 5.587562554865144e-07
       },
-      "fraction_of_steps_saturated": {
+      "fraction_of_steps_at_force_limit": {
         "mean": 0.0,
         "std": 0.0,
         "max": 0.0
+      },
+      "control_effort_abs_Ns": {
+        "mean": 1.111062480574455,
+        "std": 0.43155722271100017,
+        "max": 1.6330119716934712
       }
     }
   },

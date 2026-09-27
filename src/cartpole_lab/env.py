@@ -51,7 +51,9 @@ class CartPoleTask(gym.Wrapper):
     Claves añadidas a `info` en cada `step()`:
         force_requested  fuerza pedida por el controlador [N] (antes de saturar)
         force            fuerza del actuador tras saturar a ±F_max [N]
-        saturated        True si se recortó la fuerza pedida
+        saturated        True si se recortó la fuerza pedida (solo ocurre si el controlador pide
+                         |F| > F_max; para medir tiempo en el límite usar
+                         Trajectory.fraction_at_force_limit)
         disturbance_force  fuerza externa sobre el carro [N] (no se satura)
         total_force      force + disturbance_force [N], lo que integra el simulador
         cost             coste de etapa c(s_k, F_k) con el estado ANTES del paso

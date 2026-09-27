@@ -50,6 +50,7 @@ from scipy.optimize import differential_evolution
 from cartpole_lab.controllers.pid import DEFAULT_THETA_REF_FRACTION, PIDGains, pid_force
 from cartpole_lab.dynamics import euler_step, finite_difference_jacobian
 from cartpole_lab.params import CartPoleParams
+from cartpole_lab.rollout import Trajectory
 
 GAIN_NAMES = ("kp_theta", "ki_theta", "kd_theta", "kp_x", "kd_x")
 
@@ -190,6 +191,33 @@ def simulate_pid_batch(
         states=np.stack(states) if record else None,
         forces=np.stack(forces) if record else None,
     )
+
+
+def itae_cost(traj: Trajectory, params: CartPoleParams, config: TuningConfig) -> float:
+    """El criterio de sintonización aplicado a UNA trayectoria real (de cualquier método).
+
+    Misma definición que `simulate_pid_batch`: error real mientras vive, error
+    imputado de 2 desde el paso en que falla hasta el final del horizonte.
+    Sirve para comparar métodos con el criterio del PID.
+    """
+    if traj.n_steps > config.n_steps:
+        raise ValueError(f"La trayectoria ({traj.n_steps} pasos) supera el horizonte ({config.n_steps})")
+    if not traj.terminated and traj.n_steps != config.n_steps:
+        # Sin esta guarda, un episodio truncado antes del horizonte (otro max_episode_steps) se
+        # rellenaría con "error de fallo" como si hubiera fallado.
+        raise ValueError(
+            f"Episodio no fallido de {traj.n_steps} pasos con horizonte {config.n_steps}: horizontes incompatibles"
+        )
+    p = params
+    after_step = traj.states[1:]
+    error = np.abs(after_step[:, 2]) / p.theta_threshold_radians + np.abs(after_step[:, 0]) / p.x_threshold
+    if traj.terminated:
+        error[-1] = FAILURE_ERROR  # el estado que viola el límite ya cuenta como fallo
+    error = np.concatenate([error, np.full(config.n_steps - traj.n_steps, FAILURE_ERROR)])
+    times = np.arange(1, config.n_steps + 1) * p.tau
+    itae = float(np.sum(times * error) * p.tau)
+    effort = float(np.sum(np.square(traj.forces / p.force_mag)) * p.tau)
+    return itae + config.effort_weight * effort
 
 
 def _objective(

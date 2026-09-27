@@ -39,11 +39,24 @@ class Trajectory:
     disturbance_forces: np.ndarray  # (T,) fuerza externa [N]
     rewards: np.ndarray  # (T,) recompensa de Gymnasium
     costs: np.ndarray  # (T,) coste de etapa común
-    saturated: np.ndarray  # (T,) bool
+    saturated: np.ndarray  # (T,) bool: el ACTUADOR recortó la petición (ver nota abajo)
     terminated: bool
     truncated: bool
     termination_reason: str
     dt: float
+    force_limit: float  # F_max del actuador [N]
+
+    # Nota sobre `saturated`: solo es True si el controlador pidió |F| > F_max. Un
+    # controlador que ya recorta internamente (PID con anti-windup, LQR) o un agente
+    # discreto (±10 N exactos) nunca lo activa aunque trabaje en el límite. Para
+    # comparar métodos se usa `fraction_at_force_limit`, que es una medida física.
+
+    @property
+    def fraction_at_force_limit(self) -> float:
+        """Fracción de pasos con el actuador en su límite |F| = F_max, lo recorte quien lo recorte."""
+        if self.n_steps == 0:
+            return 0.0
+        return float(np.mean(np.abs(self.forces) >= self.force_limit))
 
     @property
     def n_steps(self) -> int:
@@ -119,4 +132,5 @@ def run_episode(
         truncated=truncated,
         termination_reason=info["termination_reason"],
         dt=task.dt,
+        force_limit=task.params.force_mag,
     )

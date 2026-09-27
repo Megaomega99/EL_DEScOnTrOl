@@ -122,6 +122,11 @@ perturbaciones constantes **no hay error estacionario que eliminar**. La I solo
 añade un modo lento y retardo de fase, lo que empeora el ITAE. Por eso, el óptimo
 de este criterio es, en la práctica, **un PD en cascada**.
 
+**Decisión (2026-09-27): se presenta tal cual.** No se añade una perturbación
+constante al escenario de sintonización para "darle papel" a la I. Hacerlo
+cambiaría la tarea respecto a los demás métodos. El mensaje para la charla es:
+*en este sistema, el mejor PID es un PD; la I sirve para otra cosa.*
+
 **Cuándo sí importa la I:** ante una fuerza externa constante d (p. ej. un raíl
 inclinado), el equilibrio del PD exige F = −d = Kp_θ·Kp_x·x, y queda un
 **error de posición estacionario**:
@@ -168,7 +173,8 @@ oficial (semillas 1000–1049):
 | Supervivencia (500 pasos) | **50/50** | — |
 | max \|θ\| en el último segundo | (2.7 ± 2.1)·10⁻⁶ ° | 8.4·10⁻⁶ ° |
 | max \|x\| en el último segundo | (1.8 ± 1.3)·10⁻⁷ m | 5.6·10⁻⁷ m |
-| Fracción de pasos saturados | 0 ± 0 | 0 |
+| Fracción de pasos con el actuador en su límite (±10 N) | 0 ± 0 | 0 |
+| Esfuerzo Σ\|F\|τ | 1.11 ± 0.43 N·s | 1.63 N·s |
 
 - Desde la **esquina más difícil** de la caja de sintonización
   (x = 0.5 m, ẋ = 0.2 m/s, θ = 0.1 rad, θ̇ = 0.2 rad/s) también estabiliza. Es la
@@ -177,11 +183,13 @@ oficial (semillas 1000–1049):
 
 **Negativo: falla de forma explícita, no silenciosa:**
 
-- θ = 0.15 rad con θ̇ = 2 rad/s termina con `pole_angle_limit` tras varios pasos,
-  sin NaN. No es un defecto del PID: **ninguna fuerza admisible lo evita**. La
-  distancia de frenado θ̇²/(2|θ̈_max|) ≈ 0.165 rad supera el margen de 0.06 rad, y
-  el test aplica +10 N constantes y también falla.
-- Un carro lanzado al borde (x = 2.2 m, ẋ = 2 m/s) termina con un motivo registrado.
+- Se usan los dos estados irrecuperables del protocolo común (`sanity.py`), y el
+  PID termina en ambos con un motivo registrado, tras varios pasos y sin NaN:
+  - θ = 0.15 rad con θ̇ = 2 rad/s;
+  - carro lanzado al borde, x = 2.0 m con ẋ = 3.5 m/s.
+- Por qué no es un defecto del PID: una búsqueda global de la mejor secuencia de
+  fuerzas no encuentra ninguna que evite el fallo, ni siquiera por un 20 %. Para
+  el carro hay además una cota física de momento lineal. Detalle en doc 04 §5.4.
 
 ![Respuesta del PID](../results/figures/03_pid_respuesta.png)
 

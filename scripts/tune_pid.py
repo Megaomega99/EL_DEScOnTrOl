@@ -1,15 +1,19 @@
 """Paso 3: sintoniza el PID en cascada, lo verifica en Gymnasium y guarda ganancias y figura.
 
-Uso:  python scripts/tune_pid.py
+Uso:
+    python scripts/tune_pid.py                 sintoniza (~2 min) y verifica
+    python scripts/tune_pid.py --skip-tuning   reutiliza las ganancias guardadas; solo recalcula
+                                               diagnósticos, sanity check y figura
 
 Salidas:
     results/tuning/pid.json               ganancias, configuración, ejecuciones del optimizador,
-                                          diagnósticos de estabilidad y versiones
-    results/figures/03_pid_respuesta.png  respuesta desde la esquina más difícil de la caja de CI
+                                          diagnósticos de estabilidad, sanity check y versiones
+    results/figures/03_pid_respuesta.png  respuesta desde el estado inicial difícil de referencia
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 import time
@@ -23,45 +27,13 @@ import numpy as np
 import scipy
 
 from cartpole_lab import CartPoleTask, load_params, run_episode
-from cartpole_lab.controllers.pid import TUNED_GAINS_PATH, CascadePID, PIDGains
+from cartpole_lab.controllers.pid import TUNED_GAINS_PATH, CascadePID, PIDGains, load_tuning_record
 from cartpole_lab.controllers.pid_tuning import TuningConfig, closed_loop_eigenvalues, tune_pid
 from cartpole_lab.paths import FIGURES_DIR
-from cartpole_lab.plotting import MUTED, SERIES, TEXT_SECONDARY, apply_style
+from cartpole_lab.plotting import METHOD_COLORS, MUTED, TEXT_SECONDARY, apply_style
+from cartpole_lab.sanity import REFERENCE_HARD_INITIAL_STATE, sanity_statistics
 
-# Semillas de EVALUACIÓN (distribución oficial de CartPole-v1), disjuntas del
-# generador de condiciones iniciales de sintonización (TuningConfig.initial_state_seed).
-SANITY_SEEDS = range(1000, 1050)
 FIGURE_PATH = FIGURES_DIR / "03_pid_respuesta.png"
-
-
-def sanity_statistics(gains: PIDGains, params, limit: float) -> dict:
-    """Estadísticos sobre N = 50 episodios en el CartPole-v1 real (no en el simulador por lotes)."""
-    task = CartPoleTask(action_mode="continuous")
-    controller = CascadePID(gains, params, theta_ref_limit=limit)
-    last_second = int(round(1.0 / params.tau))
-    survived, theta_tail, x_tail, saturated = [], [], [], []
-    try:
-        for seed in SANITY_SEEDS:
-            traj = run_episode(task, controller, seed=seed)
-            survived.append(traj.termination_reason == "time_limit")
-            theta_tail.append(np.degrees(np.max(np.abs(traj.states[-last_second:, 2]))))
-            x_tail.append(np.max(np.abs(traj.states[-last_second:, 0])))
-            saturated.append(traj.saturated.mean())
-    finally:
-        task.close()
-
-    def summary(values):
-        v = np.asarray(values, dtype=np.float64)
-        return {"mean": float(v.mean()), "std": float(v.std(ddof=1)), "max": float(v.max())}
-
-    return {
-        "n_episodes": len(survived),
-        "seeds": [SANITY_SEEDS.start, SANITY_SEEDS.stop - 1],
-        "survival_rate": float(np.mean(survived)),
-        "last_second_max_abs_theta_deg": summary(theta_tail),
-        "last_second_max_abs_x_m": summary(x_tail),
-        "fraction_of_steps_saturated": summary(saturated),
-    }
 
 
 def stability_diagnostics(gains: PIDGains, params, limit: float) -> dict:
@@ -82,23 +54,27 @@ def stability_diagnostics(gains: PIDGains, params, limit: float) -> dict:
     }
 
 
-def plot_response(gains: PIDGains, params, limit: float, initial_state: np.ndarray) -> None:
+def plot_response(gains: PIDGains, params, limit: float) -> None:
     task = CartPoleTask(action_mode="continuous")
     try:
-        traj = run_episode(task, CascadePID(gains, params, theta_ref_limit=limit), initial_state=initial_state)
+        traj = run_episode(
+            task, CascadePID(gains, params, theta_ref_limit=limit), initial_state=REFERENCE_HARD_INITIAL_STATE
+        )
     finally:
         task.close()
     t, s = traj.times, traj.states
     theta_ref = np.clip(-(gains.kp_x * s[:, 0] + gains.kd_x * s[:, 1]), -limit, limit)
+    color = METHOD_COLORS["PID"]
 
     apply_style()
     fig, (ax_x, ax_th, ax_f) = plt.subplots(3, 1, figsize=(9, 7.5), sharex=True)
-    ax_x.plot(t, s[:, 0], color=SERIES[0])
+    ax_x.plot(t, s[:, 0], color=color)
     ax_x.set_ylabel("x [m]")
     ax_x.set_title("Posición del carro (objetivo secundario)", loc="left", fontsize=11)
 
-    ax_th.plot(t, np.degrees(s[:, 2]), color=SERIES[0], label="θ medido")
-    ax_th.plot(t, np.degrees(theta_ref), color=SERIES[1], linestyle="--", linewidth=1.6,
+    ax_th.plot(t, np.degrees(s[:, 2]), color=color, label="θ medido")
+    # θ_ref es una referencia interna, no otro método: tinta neutra, no un color categórico.
+    ax_th.plot(t, np.degrees(theta_ref), color=TEXT_SECONDARY, linestyle="--", linewidth=1.6,
                label="θ_ref pedido por el lazo de posición")
     for sign in (+1, -1):
         ax_th.axhline(sign * np.degrees(limit), color=MUTED, linewidth=1, linestyle=":")
@@ -107,14 +83,14 @@ def plot_response(gains: PIDGains, params, limit: float, initial_state: np.ndarr
                     loc="left", fontsize=11)
     ax_th.legend(loc="upper right")
 
-    ax_f.step(t[:-1], traj.forces, where="post", color=SERIES[0])
+    ax_f.step(t[:-1], traj.forces, where="post", color=color)
     for sign in (+1, -1):
         ax_f.axhline(sign * params.force_mag, color=MUTED, linewidth=1, linestyle=":")
     ax_f.set_ylabel("F [N]")
     ax_f.set_xlabel("t [s]")
     ax_f.set_title("Fuerza del actuador (saturación en ±10 N)", loc="left", fontsize=11)
 
-    x0, v0, th0, w0 = initial_state
+    x0, v0, th0, w0 = REFERENCE_HARD_INITIAL_STATE
     fig.suptitle(
         "PID en cascada sintonizado (ITAE + evolución diferencial)\n"
         f"CI: x={x0} m, ẋ={v0} m/s, θ={th0} rad, θ̇={w0} rad/s  (esquina más difícil de la caja de sintonización)",
@@ -126,57 +102,68 @@ def plot_response(gains: PIDGains, params, limit: float, initial_state: np.ndarr
     plt.close(fig)
 
 
-def main() -> int:
-    params = load_params()
-    config = TuningConfig()
-    limit = config.theta_ref_limit(params)
-
+def run_tuning(config: TuningConfig, params) -> tuple[PIDGains, dict]:
     start = time.perf_counter()
     result = tune_pid(config, params)
     elapsed = time.perf_counter() - start
     print(f"Sintonización: {len(result.runs)} ejecuciones de evolución diferencial en {elapsed:.1f} s")
     for run in result.runs:
-        g = run.gains.to_dict()
-        print(f"  semilla {run.de_seed}: J={run.cost:.5f} nit={run.nit} nfev={run.nfev} "
-              f"convergió={run.converged} | " + ", ".join(f"{k}={v:.4g}" for k, v in g.items()))
-
+        print(f"  semilla {run.de_seed}: J={run.cost:.5f} nit={run.nit} nfev={run.nfev} convergió={run.converged} | "
+              + ", ".join(f"{k}={v:.4g}" for k, v in run.gains.to_dict().items()))
     best = result.best
-    stability = stability_diagnostics(best.gains, params, limit)
-    sanity = sanity_statistics(best.gains, params, limit)
-    print(f"\nMejor: semilla {best.de_seed}, J={best.cost:.5f}")
+    tuning = {
+        "method": "differential_evolution (scipy), criterio ITAE + esfuerzo, ver pid_tuning.py",
+        "config": config.to_dict(),
+        "selected_de_seed": best.de_seed,
+        "cost": best.cost,
+        "runs": [
+            {"de_seed": r.de_seed, "cost": r.cost, "nit": r.nit, "nfev": r.nfev,
+             "converged": r.converged, "message": r.message, "gains": r.gains.to_dict()}
+            for r in result.runs
+        ],
+        "wall_time_s": elapsed,
+    }
+    return best.gains, tuning
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--skip-tuning", action="store_true", help="reutilizar las ganancias de pid.json")
+    args = parser.parse_args()
+
+    params = load_params()
+    config = TuningConfig()
+    limit = config.theta_ref_limit(params)
+    if args.skip_tuning:
+        previous = load_tuning_record()
+        if previous["tuning"]["config"] != config.to_dict():
+            raise SystemExit("La configuración cambió desde la última sintonización: ejecutar sin --skip-tuning")
+        gains, tuning = PIDGains(**previous["gains"]), previous["tuning"]
+    else:
+        gains, tuning = run_tuning(config, params)
+
+    stability = stability_diagnostics(gains, params, limit)
+    sanity = sanity_statistics(CascadePID(gains, params, theta_ref_limit=limit), params)
     print(json.dumps({"stability": stability, "sanity": sanity}, indent=2, ensure_ascii=False))
 
     record = {
         "controller": "CascadePID",
-        "gains": best.gains.to_dict(),
+        "gains": gains.to_dict(),
         "theta_ref_limit_rad": limit,
-        "tuning": {
-            "method": "differential_evolution (scipy), criterio ITAE + esfuerzo, ver pid_tuning.py",
-            "config": config.to_dict(),
-            "selected_de_seed": best.de_seed,
-            "cost": best.cost,
-            "runs": [
-                {"de_seed": r.de_seed, "cost": r.cost, "nit": r.nit, "nfev": r.nfev,
-                 "converged": r.converged, "message": r.message, "gains": r.gains.to_dict()}
-                for r in result.runs
-            ],
-            "wall_time_s": elapsed,
-        },
+        "tuning": tuning,
         "diagnostics": {"stability": stability, "sanity_gymnasium_default_ic": sanity},
         "versions": {"gymnasium": gym.__version__, "numpy": np.__version__, "scipy": scipy.__version__},
         "generated_by": "scripts/tune_pid.py",
     }
     TUNED_GAINS_PATH.parent.mkdir(parents=True, exist_ok=True)
     TUNED_GAINS_PATH.write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"\nGuardado {TUNED_GAINS_PATH}")
-
-    plot_response(best.gains, params, limit, np.array(config.initial_state_box))
-    print(f"Figura {FIGURE_PATH}")
+    plot_response(gains, params, limit)
+    print(f"\nGuardado {TUNED_GAINS_PATH}\nFigura {FIGURE_PATH}")
 
     ok = (
         stability["spectral_radius_full"] <= 1.0 + 1e-9
         and stability["spectral_radius_physical_modes"] < 1.0
-        and sanity["survival_rate"] == 1.0
+        and sanity["stabilized_rate"] == 1.0
     )
     if not ok:
         print("ATENCIÓN: el PID sintonizado NO supera el sanity check; revisar antes de continuar.")
