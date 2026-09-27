@@ -53,6 +53,7 @@ notebooks/           notebook docente único                     (Fase 4)
 results/figures/     figuras para las diapositivas
 results/tuning/      parámetros sintonizados de los controladores clásicos (JSON con metadatos)
 results/weights/     pesos exportados (JSON/ONNX) para inferencia en el navegador
+results/rl/          registros de entrenamiento de RL (curvas, semillas, test)
 results/metrics/     métricas de la comparación (Fase 3)
 docs/                decisiones de diseño documentadas
 ```
@@ -64,6 +65,7 @@ docs/                decisiones de diseño documentadas
 - [docs/04_lqr.md](docs/04_lqr.md): linealización, elección del modelo discreto (Euler frente a ZOH frente a continuo), Q y R por la regla de Bryson, y PID frente a LQR con el criterio de cada uno.
 - [docs/05_mpc.md](docs/05_mpc.md): MPC lineal con restricciones, margen de seguridad, horizonte y solver elegidos con datos (Clarabel frente a OSQP).
 - [docs/06_fuzzy.md](docs/06_fuzzy.md): fuzzy Takagi-Sugeno de orden 0 (membresías, tabla de reglas, inferencia), por qué equivale a un PD con saturación suave, y comparación con el PID.
+- [docs/07_08_tabular.md](docs/07_08_tabular.md): discretización en cajas (BOXES de 1983, verificada en `pole.c`, y estudio de sensibilidad), Q-learning y SARSA con 10 semillas, inestabilidad y calidad del control aprendido.
 
 ## Hoja de ruta
 
@@ -73,6 +75,7 @@ docs/                decisiones de diseño documentadas
 - [x] 4. LQR (modelo de Euler del simulador, pesos de Bryson)
 - [x] 5. MPC lineal (CVXPY + Clarabel, N = 25, restricciones con margen)
 - [x] 6. Fuzzy Takagi-Sugeno de orden 0 (tabla MacVicar-Whelan 5×5, mismo protocolo de sintonización que el PID)
-- [ ] 7-8. Discretización + Q-learning / SARSA · 9. DQN · 10. Actor-crítico · 11. Exportación de pesos
+- [x] 7-8. Discretización (BOXES 1983) + Q-learning / SARSA tabulares (10 semillas)
+- [ ] 9. DQN · 10. Actor-crítico · 11. Exportación de pesos
 - [ ] 12-13. Evaluación comparativa y figuras
 - [ ] 14. Notebook

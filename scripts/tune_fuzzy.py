@@ -21,7 +21,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.colors import LinearSegmentedColormap
 
 from cartpole_lab import CartPoleTask, load_params, run_episode
 from cartpole_lab.controllers.fuzzy import (
@@ -33,15 +32,13 @@ from cartpole_lab.controllers.fuzzy_tuning import (
 from cartpole_lab.controllers.pid import CascadePID, load_tuned_gains, load_tuning_record
 from cartpole_lab.controllers.pid_tuning import itae_cost
 from cartpole_lab.paths import FIGURES_DIR, TUNING_DIR
-from cartpole_lab.plotting import GRID, METHOD_COLORS, MUTED, SURFACE, TEXT_PRIMARY, TEXT_SECONDARY, apply_style
+from cartpole_lab.plotting import FORCE_CMAP, METHOD_COLORS, MUTED, SURFACE, TEXT_PRIMARY, TEXT_SECONDARY, apply_style
 from cartpole_lab.sanity import NEAR_BOUNDARY_INITIAL_STATES, REFERENCE_HARD_INITIAL_STATE, is_stabilized, sanity_statistics
 
 RULES_FIGURE = FIGURES_DIR / "06_fuzzy_reglas.png"
 RESPONSE_FIGURE = FIGURES_DIR / "06_fuzzy_vs_pid.png"
 CROSSOVER_SEED = 2027  # mismas CI fuera de muestra que la comparación PID-LQR del paso 4
 SENSITIVITY_U_MAX = 40.0  # N: "empujar fuerte" más allá del actuador (solo como experimento)
-# Divergente azul <-> gris <-> rojo (paleta de referencia): signo de la fuerza.
-FORCE_CMAP = LinearSegmentedColormap.from_list("fuerza", ["#2a78d6", "#f0efec", "#e34948"])
 
 
 def run(controller, initial_state):

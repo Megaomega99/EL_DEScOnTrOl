@@ -8,6 +8,7 @@ método conserve su color a lo largo de la presentación.
 from __future__ import annotations
 
 import matplotlib as mpl
+from matplotlib.colors import LinearSegmentedColormap
 
 SURFACE = "#fcfcfb"
 TEXT_PRIMARY = "#0b0b0b"
@@ -30,6 +31,11 @@ METHOD_COLORS = {
     "DQN": SERIES[6],
     "Actor-crítico": SERIES[7],
 }
+
+
+# Divergente para el SIGNO de la fuerza (azul = izquierda, gris = 0, rojo = derecha): mismos polos
+# que la paleta de referencia. Se usa en todas las figuras donde el color codifica F.
+FORCE_CMAP = LinearSegmentedColormap.from_list("fuerza", ["#2a78d6", "#f0efec", "#e34948"])
 
 
 def apply_style() -> None:
