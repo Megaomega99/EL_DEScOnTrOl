@@ -51,6 +51,7 @@ tests/               sanity checks y verificación contra Gymnasium
 scripts/             scripts ejecutables (verificación, entrenamiento, figuras)
 notebooks/           notebook docente único                     (Fase 4)
 results/figures/     figuras para las diapositivas
+results/tuning/      parámetros sintonizados de los controladores clásicos (JSON con metadatos)
 results/weights/     pesos exportados (JSON/ONNX) para inferencia en el navegador
 results/metrics/     métricas de la comparación (Fase 3)
 docs/                decisiones de diseño documentadas
@@ -59,12 +60,14 @@ docs/                decisiones de diseño documentadas
 ## Documentación
 
 - [docs/01_entorno_cartpole.md](docs/01_entorno_cartpole.md): versión, constantes, ecuaciones, discretización, convenciones de signo y decisiones del wrapper.
+- [docs/03_pid.md](docs/03_pid.md): PID en cascada, por qué Ziegler–Nichols no aplica, sintonización por optimización (ITAE) y resultados.
 
 ## Hoja de ruta
 
 - [x] 1. Estructura del repo y dependencias fijadas
 - [x] 2. Interfaz común del entorno (`CartPoleTask`)
-- [ ] 3. PID · 4. LQR · 5. MPC · 6. Fuzzy
+- [x] 3. PID en cascada (sintonizado por evolución diferencial sobre ITAE)
+- [ ] 4. LQR · 5. MPC · 6. Fuzzy
 - [ ] 7-8. Discretización + Q-learning / SARSA · 9. DQN · 10. Actor-crítico · 11. Exportación de pesos
 - [ ] 12-13. Evaluación comparativa y figuras
 - [ ] 14. Notebook

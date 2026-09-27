@@ -1,0 +1,157 @@
+{
+  "controller": "CascadePID",
+  "gains": {
+    "kp_theta": 142.69524196791684,
+    "ki_theta": 0.0005338839794859496,
+    "kd_theta": 26.224969637255796,
+    "kp_x": 0.19415485207018066,
+    "kd_x": 0.21027405672056257
+  },
+  "theta_ref_limit_rad": 0.05235987755982988,
+  "tuning": {
+    "method": "differential_evolution (scipy), criterio ITAE + esfuerzo, ver pid_tuning.py",
+    "config": {
+      "n_initial_states": 32,
+      "initial_state_box": [
+        0.5,
+        0.2,
+        0.1,
+        0.2
+      ],
+      "initial_state_seed": 2026,
+      "n_steps": 500,
+      "effort_weight": 0.1,
+      "theta_ref_fraction": 0.25,
+      "bounds": [
+        [
+          0.0,
+          200.0
+        ],
+        [
+          0.0,
+          200.0
+        ],
+        [
+          0.0,
+          40.0
+        ],
+        [
+          0.0,
+          0.5
+        ],
+        [
+          0.0,
+          0.5
+        ]
+      ],
+      "de_seeds": [
+        0,
+        1,
+        2
+      ],
+      "popsize": 20,
+      "maxiter": 150,
+      "tol": 1e-08
+    },
+    "selected_de_seed": 2,
+    "cost": 0.3250389427836759,
+    "runs": [
+      {
+        "de_seed": 0,
+        "cost": 0.337322226859187,
+        "nit": 120,
+        "nfev": 121,
+        "converged": true,
+        "message": "Optimization terminated successfully.",
+        "gains": {
+          "kp_theta": 199.999994034525,
+          "ki_theta": 170.92923187839932,
+          "kd_theta": 34.36299144265699,
+          "kp_x": 0.2114991660510509,
+          "kd_x": 0.19891516364490638
+        }
+      },
+      {
+        "de_seed": 1,
+        "cost": 0.32503894338434286,
+        "nit": 150,
+        "nfev": 151,
+        "converged": false,
+        "message": "Maximum number of iterations has been exceeded.",
+        "gains": {
+          "kp_theta": 142.689784985484,
+          "ki_theta": 0.0005549231684369715,
+          "kd_theta": 26.223766931353495,
+          "kp_x": 0.1941435860835429,
+          "kd_x": 0.21026679807447435
+        }
+      },
+      {
+        "de_seed": 2,
+        "cost": 0.3250389427836759,
+        "nit": 143,
+        "nfev": 144,
+        "converged": true,
+        "message": "Optimization terminated successfully.",
+        "gains": {
+          "kp_theta": 142.69524196791684,
+          "ki_theta": 0.0005338839794859496,
+          "kd_theta": 26.224969637255796,
+          "kp_x": 0.19415485207018066,
+          "kd_x": 0.21027405672056257
+        }
+      }
+    ],
+    "wall_time_s": 111.8527793000685
+  },
+  "diagnostics": {
+    "stability": {
+      "spectral_radius_full": 0.9999999251714392,
+      "abs_eigenvalues_full": [
+        0.9658695220305331,
+        0.9658695220305331,
+        0.9717467349160851,
+        0.9717467349160851,
+        0.9999999251714392
+      ],
+      "spectral_radius_physical_modes": 0.9717467681830402,
+      "dominant_time_constant_s": 0.6978358533877388,
+      "equivalent_state_feedback_K": [
+        27.70497359539953,
+        30.005107403316146,
+        142.69524196791684,
+        26.224969637255796
+      ],
+      "pd_offset_per_newton_of_constant_force_m": -0.03609460216796785
+    },
+    "sanity_gymnasium_default_ic": {
+      "n_episodes": 50,
+      "seeds": [
+        1000,
+        1049
+      ],
+      "survival_rate": 1.0,
+      "last_second_max_abs_theta_deg": {
+        "mean": 2.6861789123430644e-06,
+        "std": 2.09535783631203e-06,
+        "max": 8.37482203973314e-06
+      },
+      "last_second_max_abs_x_m": {
+        "mean": 1.752891598982842e-07,
+        "std": 1.3041920042962576e-07,
+        "max": 5.587562554865144e-07
+      },
+      "fraction_of_steps_saturated": {
+        "mean": 0.0,
+        "std": 0.0,
+        "max": 0.0
+      }
+    }
+  },
+  "versions": {
+    "gymnasium": "1.3.0",
+    "numpy": "2.2.4",
+    "scipy": "1.15.2"
+  },
+  "generated_by": "scripts/tune_pid.py"
+}

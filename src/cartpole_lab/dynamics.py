@@ -37,6 +37,8 @@ Estado s = [x, ẋ, θ, θ̇]:  x posición del carro [m] (+ a la derecha),
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import numpy as np
 from numpy.typing import ArrayLike
 
@@ -88,3 +90,21 @@ def euler_step(state: ArrayLike, force: ArrayLike, params: CartPoleParams) -> np
         )
     s = _as_state(state)
     return s + params.tau * continuous_dynamics(s, force, params)
+
+
+def finite_difference_jacobian(
+    fn: Callable[[np.ndarray], np.ndarray], point: ArrayLike, eps: float = 1e-6
+) -> np.ndarray:
+    """J_ij = ∂fn_i/∂z_j en `point`, por diferencias centrales (error O(eps²)).
+
+    Herramienta de verificación: permite analizar la estabilidad local de cualquier
+    lazo cerrado (PID, fuzzy, redes) sin derivarlo a mano, y contrastar las
+    matrices A, B analíticas del LQR (paso 4) con las del simulador.
+    """
+    z0 = np.asarray(point, dtype=np.float64)
+    columns = []
+    for j in range(z0.size):
+        step = np.zeros_like(z0)
+        step[j] = eps
+        columns.append((np.asarray(fn(z0 + step)) - np.asarray(fn(z0 - step))) / (2.0 * eps))
+    return np.stack(columns, axis=-1)
