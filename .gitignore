@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Tests / cobertura
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Entornos y editores
+.venv/
+.vscode/
+.idea/
+
+# NOTA: results/ SÍ se versiona (figuras de las diapositivas y pesos exportados
+# de DQN/actor-crítico para la inferencia en el navegador).

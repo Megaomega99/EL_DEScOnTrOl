@@ -1,0 +1,38 @@
+# Versiones EXACTAS (==), verificadas en el entorno conda "base" (Python 3.13.14, Windows 11)
+# el 2026-09-27. Instalar con:   python -m pip install -r requirements.txt
+#
+# Se fijan las dependencias directas del proyecto y las transitivas del simulador:
+# el núcleo físico (gymnasium + sus dependencias) debe ser idéntico en cualquier
+# máquina para que los resultados sean reproducibles.
+# Las librerías de pasos posteriores (p. ej. el solver del MPC o la exportación a
+# ONNX) se añadirán aquí, con su pin, cuando se decida e implemente cada paso.
+
+# --- Simulador (Fase 1) -------------------------------------------------------
+gymnasium==1.3.0
+# Renderizado. Gymnasium 1.3.0 [classic-control] depende de pygame-ce (fork
+# comunitario de pygame), NO del paquete "pygame" original.
+pygame-ce==2.5.8
+# Dependencias transitivas de gymnasium 1.3.0
+cloudpickle==3.1.2
+farama-notifications==0.0.6
+typing_extensions==4.15.0
+
+# --- Cálculo numérico ---------------------------------------------------------
+numpy==2.2.4
+scipy==1.15.2          # ecuación de Riccati para LQR (paso 4)
+
+# --- Aprendizaje profundo (Fase 2) --------------------------------------------
+# En la máquina de desarrollo está instalado 2.6.0+cu124 (build CUDA 12.4). Según
+# PEP 440, "==2.6.0" acepta cualquier build local de 2.6.0, así que este pin se
+# cumple tanto con la build CUDA como con la de CPU (CartPole no necesita GPU).
+torch==2.6.0
+
+# --- Visualización y notebook (Fases 3-4) -------------------------------------
+matplotlib==3.11.0
+jupyterlab==4.6.1
+ipykernel==7.2.0
+
+# --- Tests --------------------------------------------------------------------
+pytest==8.3.5
+pytest-cov==7.1.0
+coverage==7.16.2
