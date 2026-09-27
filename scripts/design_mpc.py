@@ -78,9 +78,12 @@ def horizon_sweep(params, design) -> list[dict]:
     rows = []
     for N, r in results.items():
         relative = np.asarray(r["costs"]) / reference - 1
-        rows.append({"horizon": N, "n_stabilized": r["n_stabilized"],
-                     "relative_cost_vs_N50_mean_pct": float(100 * np.nanmean(relative)),
-                     "relative_cost_vs_N50_worst_pct": float(100 * np.nanmax(relative)),
+        # Solo se comparan los estados donde AMBOS horizontes sobrevivieron (coste definido).
+        # Si no queda ninguno, se registra explícitamente en vez de propagar un NaN silencioso.
+        comparable = relative[np.isfinite(relative)]
+        rows.append({"horizon": N, "n_stabilized": r["n_stabilized"], "n_comparable": int(comparable.size),
+                     "relative_cost_vs_N50_mean_pct": float(100 * comparable.mean()) if comparable.size else None,
+                     "relative_cost_vs_N50_worst_pct": float(100 * comparable.max()) if comparable.size else None,
                      "timing": timing_summary(r["solve_times_s"])})
     return rows
 
@@ -106,9 +109,9 @@ def solver_benchmark(params) -> dict:
         for s, ref in zip(SOLVER_BENCHMARK_STATES, reference):
             try:
                 errors.append(abs(controller(s) - ref))
-                statuses.append("optimal")
-            except RuntimeError as err:
-                statuses.append(str(err).split("'")[-2])
+            except RuntimeError:
+                pass  # el estado queda registrado en controller.last_status
+            statuses.append(controller.last_status)
         controller.solve_times.clear()
         for s in SOLVER_BENCHMARK_STATES * 5:
             try:

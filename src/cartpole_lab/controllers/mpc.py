@@ -35,10 +35,13 @@ DECISIONES Y POR QUÉ
 * Horizonte N = 25 (0.5 s): el menor de {3, 5, 10, 25, 50} cuyo coste en lazo cerrado,
   en el peor caso de los estados de prueba, queda a menos del 1 % del de N = 50
   (docs/05_mpc.md). El criterio del 1 % es una elección.
-* Solver: CVXPY (modelado) + Clarabel (punto interior). OSQP (ADMM), el habitual en
-  MPC embebido por su warm start, dio 'optimal_inaccurate' o agotó iteraciones en
-  estados difíciles, con un peor caso de 187–462 ms frente a 7.8 ms de Clarabel.
-  En tiempo real importa el peor caso, no la media.
+* Solver: CVXPY (modelado) + Clarabel (punto interior). OSQP (ADMM) es el habitual en
+  MPC embebido por su warm start. En el benchmark registrado (results/tuning/mpc.json,
+  6 problemas × 5 repeticiones), OSQP con ε = 1e-7 agotó iteraciones en 1 de 6 y su
+  peor caso fue de 175 ms, 8.8 veces el periodo de 20 ms. Clarabel resolvió 6/6
+  con un peor caso de 6.9 ms. En la exploración previa (no registrada), OSQP también
+  devolvió 'optimal_inaccurate' en estados difíciles. En tiempo real importa el peor
+  caso, no la media.
 """
 
 from __future__ import annotations
@@ -101,6 +104,7 @@ class LinearMPC:
         self._build(params)
         self.solve_times: list[float] = []
         self.last_plan: dict[str, Any] | None = None
+        self.last_status: str | None = None
         self._solve(np.zeros(4))  # precompilación: la 1.ª resolución incluye la canonicalización
         self.reset()
 
@@ -141,6 +145,7 @@ class LinearMPC:
         start = time.perf_counter()
         self._problem.solve(solver=self.config.solver, **dict(self.config.solver_options))
         self.solve_times.append(time.perf_counter() - start)
+        self.last_status = self._problem.status  # público: diagnóstico sin analizar el texto de errores
         if self._problem.status != cp.OPTIMAL:
             # Nunca se devuelve una fuerza de un problema no resuelto: sería silenciosamente arbitraria.
             raise RuntimeError(f"MPC: el solver {self.config.solver} devolvió '{self._problem.status}'")

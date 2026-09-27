@@ -181,3 +181,13 @@ def test_extreme_initial_states_fail_loudly(task, params, mpc, name):
 def test_saved_record_matches_the_current_config():
     record = json.loads((TUNING_DIR / "mpc.json").read_text(encoding="utf-8"))
     assert record["config"] == MPCConfig().to_dict()
+
+
+def test_last_status_is_exposed_for_diagnostics(params):
+    controller = LinearMPC(params)
+    controller([0.0, 0.0, 0.01, 0.0])
+    assert controller.last_status == cp.OPTIMAL
+    hard = LinearMPC(params, MPCConfig(slack_weight=None))
+    with pytest.raises(RuntimeError):
+        hard([0.0, 0.0, 0.205, 0.0])
+    assert hard.last_status == cp.INFEASIBLE
