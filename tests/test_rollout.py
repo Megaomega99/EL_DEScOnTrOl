@@ -109,3 +109,10 @@ def test_fraction_at_force_limit_counts_controllers_that_clip_internally(task):
 def test_fraction_at_force_limit_is_zero_for_gentle_control(task):
     traj = run_episode(task, ConstantForce(0.0), initial_state=np.zeros(4))
     assert traj.fraction_at_force_limit == 0.0 and traj.force_limit == task.params.force_mag
+
+
+def test_force_just_below_the_limit_from_solver_tolerance_counts_as_at_limit(task):
+    traj = run_episode(task, ConstantForce(10.0 - 1e-8), initial_state=np.zeros(4))
+    assert traj.fraction_at_force_limit == 1.0
+    traj = run_episode(task, ConstantForce(9.99), initial_state=np.zeros(4))
+    assert traj.fraction_at_force_limit == 0.0

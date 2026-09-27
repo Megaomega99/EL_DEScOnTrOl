@@ -4,8 +4,8 @@
 # Se fijan las dependencias directas del proyecto y las transitivas del simulador:
 # el núcleo físico (gymnasium + sus dependencias) debe ser idéntico en cualquier
 # máquina para que los resultados sean reproducibles.
-# Las librerías de pasos posteriores (p. ej. el solver del MPC o la exportación a
-# ONNX) se añadirán aquí, con su pin, cuando se decida e implemente cada paso.
+# Las librerías de pasos posteriores (p. ej. la exportación a ONNX) se añadirán aquí,
+# con su pin, cuando se decida e implemente cada paso.
 
 # --- Simulador (Fase 1) -------------------------------------------------------
 gymnasium==1.3.0
@@ -20,6 +20,16 @@ typing_extensions==4.15.0
 # --- Cálculo numérico ---------------------------------------------------------
 numpy==2.2.4
 scipy==1.15.2          # ecuación de Riccati para LQR (paso 4)
+
+# --- Optimización para el MPC (Fase 1, paso 5) --------------------------------
+cvxpy==1.9.3           # capa de modelado (problema parametrizado DPP, se compila una vez)
+clarabel==0.11.1       # solver usado (punto interior): robusto y con peor caso acotado
+osqp==1.1.3            # solver comparado y descartado (ver docs/05_mpc.md)
+scs==3.3.1             # dependencias de cvxpy 1.9.3 (solvers incluidos por defecto)
+highspy==1.15.1
+qdldl==0.1.9.post1
+sparsediffpy==0.6.1
+cffi==1.17.1           # dependencia de clarabel
 
 # --- Aprendizaje profundo (Fase 2) --------------------------------------------
 # En la máquina de desarrollo está instalado 2.6.0+cu124 (build CUDA 12.4). Según

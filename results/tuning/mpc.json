@@ -1,0 +1,352 @@
+{
+  "controller": "LinearMPC (CVXPY + Clarabel)",
+  "config": {
+    "horizon": 25,
+    "theta_constraint_rad": null,
+    "x_constraint_m": null,
+    "slack_weight": 10000.0,
+    "solver": "CLARABEL",
+    "solver_options": []
+  },
+  "theta_constraint_rad": 0.1415394733244273,
+  "x_constraint_m": 2.4,
+  "horizon_sweep": [
+    {
+      "horizon": 3,
+      "n_stabilized": 12,
+      "relative_cost_vs_N50_mean_pct": -0.08094900718881767,
+      "relative_cost_vs_N50_worst_pct": 1.299411872358358,
+      "timing": {
+        "mean_ms": 2.310072351344085,
+        "p99_ms": 3.6704180086962883,
+        "max_ms": 6.50290003977716,
+        "n_solves": 6000,
+        "fraction_of_20ms_budget_worst_case": 0.325145001988858
+      }
+    },
+    {
+      "horizon": 5,
+      "n_stabilized": 12,
+      "relative_cost_vs_N50_mean_pct": 1.4331875928654794,
+      "relative_cost_vs_N50_worst_pct": 6.9456038690615785,
+      "timing": {
+        "mean_ms": 2.4213661665368513,
+        "p99_ms": 3.3196010137908183,
+        "max_ms": 4.449600004591048,
+        "n_solves": 6000,
+        "fraction_of_20ms_budget_worst_case": 0.2224800002295524
+      }
+    },
+    {
+      "horizon": 10,
+      "n_stabilized": 12,
+      "relative_cost_vs_N50_mean_pct": 0.37920617585701555,
+      "relative_cost_vs_N50_worst_pct": 1.473329567251369,
+      "timing": {
+        "mean_ms": 3.037479399567625,
+        "p99_ms": 4.183054954046384,
+        "max_ms": 5.535500007681549,
+        "n_solves": 6000,
+        "fraction_of_20ms_budget_worst_case": 0.27677500038407743
+      }
+    },
+    {
+      "horizon": 25,
+      "n_stabilized": 12,
+      "relative_cost_vs_N50_mean_pct": 0.028066495462513347,
+      "relative_cost_vs_N50_worst_pct": 0.18099265219957417,
+      "timing": {
+        "mean_ms": 4.54577526684928,
+        "p99_ms": 6.362851019948722,
+        "max_ms": 7.36670009791851,
+        "n_solves": 6000,
+        "fraction_of_20ms_budget_worst_case": 0.3683350048959255
+      }
+    },
+    {
+      "horizon": 50,
+      "n_stabilized": 12,
+      "relative_cost_vs_N50_mean_pct": 0.0,
+      "relative_cost_vs_N50_worst_pct": 0.0,
+      "timing": {
+        "mean_ms": 6.597911517989512,
+        "p99_ms": 9.59834497654811,
+        "max_ms": 11.95650000590831,
+        "n_solves": 6000,
+        "fraction_of_20ms_budget_worst_case": 0.5978250002954155
+      }
+    }
+  ],
+  "margin_sweep": [
+    {
+      "theta_constraint_deg": 12.0,
+      "n_stabilized": 6,
+      "stabilized": [
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true
+      ],
+      "max_abs_theta_deg": 12.00543289564152
+    },
+    {
+      "theta_constraint_deg": 11.99,
+      "n_stabilized": 12,
+      "stabilized": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "max_abs_theta_deg": 11.995440328885792
+    },
+    {
+      "theta_constraint_deg": 10.0,
+      "n_stabilized": 12,
+      "stabilized": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "max_abs_theta_deg": 11.82797092062625
+    },
+    {
+      "theta_constraint_deg": 8.11,
+      "n_stabilized": 12,
+      "stabilized": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "max_abs_theta_deg": 11.82797092062625
+    }
+  ],
+  "solver_benchmark": {
+    "CLARABEL": {
+      "statuses": [
+        "optimal",
+        "optimal",
+        "optimal",
+        "optimal",
+        "optimal",
+        "optimal"
+      ],
+      "max_abs_error_vs_clarabel_N": 0.0,
+      "timing": {
+        "mean_ms": 4.886986691659938,
+        "p99_ms": 6.77682502893731,
+        "max_ms": 6.915300036780536,
+        "n_solves": 30,
+        "fraction_of_20ms_budget_worst_case": 0.3457650018390268
+      }
+    },
+    "OSQP (eps 1e-7, polish)": {
+      "statuses": [
+        "optimal",
+        "optimal",
+        "optimal",
+        "user_limit",
+        "optimal",
+        "optimal"
+      ],
+      "max_abs_error_vs_clarabel_N": 2.935347690069534e-05,
+      "timing": {
+        "mean_ms": 82.68224000154684,
+        "p99_ms": 174.67437200364657,
+        "max_ms": 175.19149999134243,
+        "n_solves": 30,
+        "fraction_of_20ms_budget_worst_case": 8.759574999567121
+      }
+    }
+  },
+  "near_boundary_comparison": {
+    "PID": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ],
+    "LQR": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ],
+    "MPC": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "sanity_gymnasium_default_ic": {
+    "n_episodes": 50,
+    "seeds": [
+      1000,
+      1049
+    ],
+    "survival_rate": 1.0,
+    "stabilized_rate": 1.0,
+    "termination_reasons": {
+      "time_limit": 50
+    },
+    "last_second_max_abs_theta_deg": {
+      "mean": 0.0005552709384126744,
+      "std": 0.00042197847050401465,
+      "max": 0.0014919762211516874
+    },
+    "last_second_max_abs_x_m": {
+      "mean": 5.577564493250975e-05,
+      "std": 3.6441887424042724e-05,
+      "max": 0.00014294518041424453
+    },
+    "fraction_of_steps_at_force_limit": {
+      "mean": 0.0,
+      "std": 0.0,
+      "max": 0.0
+    },
+    "control_effort_abs_Ns": {
+      "mean": 0.32916203759368334,
+      "std": 0.1980896578031348,
+      "max": 0.739379876591825
+    }
+  },
+  "near_boundary_initial_states": [
+    [
+      0.0,
+      0.0,
+      0.12,
+      1.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.16,
+      0.5
+    ],
+    [
+      0.0,
+      0.0,
+      0.19,
+      0.5
+    ],
+    [
+      0.0,
+      0.0,
+      0.205,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.1,
+      1.25
+    ],
+    [
+      1.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      1.0,
+      1.5,
+      0.0,
+      0.0
+    ],
+    [
+      1.5,
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.5,
+      1.5,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      2.0,
+      0.0,
+      0.0
+    ],
+    [
+      1.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    [
+      0.5,
+      0.2,
+      0.1,
+      0.2
+    ]
+  ],
+  "versions": {
+    "gymnasium": "1.3.0",
+    "numpy": "2.2.4",
+    "cvxpy": "1.9.3"
+  },
+  "generated_by": "scripts/design_mpc.py"
+}

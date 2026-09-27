@@ -14,6 +14,8 @@ from numpy.typing import ArrayLike
 
 from cartpole_lab.env import CartPoleTask
 
+FORCE_LIMIT_RTOL = 1e-6  # tolerancia para considerar que el actuador está en su límite
+
 
 class Controller(Protocol):
     """Contrato mínimo de cualquier controlador o agente entrenado."""
@@ -53,10 +55,14 @@ class Trajectory:
 
     @property
     def fraction_at_force_limit(self) -> float:
-        """Fracción de pasos con el actuador en su límite |F| = F_max, lo recorte quien lo recorte."""
+        """Fracción de pasos con el actuador en su límite |F| = F_max, lo recorte quien lo recorte.
+
+        Con tolerancia relativa de 1e-6: un solver de optimización (MPC) entrega 9.9999999 N
+        cuando la restricción |F| ≤ 10 N está activa, y eso también es "en el límite".
+        """
         if self.n_steps == 0:
             return 0.0
-        return float(np.mean(np.abs(self.forces) >= self.force_limit))
+        return float(np.mean(np.abs(self.forces) >= self.force_limit * (1.0 - FORCE_LIMIT_RTOL)))
 
     @property
     def n_steps(self) -> int:

@@ -45,6 +45,25 @@ UNRECOVERABLE_INITIAL_STATES = {
 }
 RESCUE_SEARCH_HORIZON = 25  # pasos (0.5 s): en ambos casos el fallo ocurre mucho antes
 
+# Estados RECUPERABLES pero exigentes, cerca de la frontera (poste inclinado y rápido, o carro
+# desplazado y lanzado). Se eligieron explorando una malla gruesa con PID y LQR ANTES de
+# evaluar el MPC. Sirven para comparar métodos donde difieren. No son un mapa de la
+# región de atracción; ese análisis sistemático corresponde a la Fase 3.
+NEAR_BOUNDARY_INITIAL_STATES = (
+    (0.0, 0.0, 0.12, 1.0),
+    (0.0, 0.0, 0.16, 0.5),
+    (0.0, 0.0, 0.19, 0.5),
+    (0.0, 0.0, 0.205, 0.0),
+    (0.0, 0.0, 0.10, 1.25),
+    (1.0, 1.0, 0.0, 0.0),
+    (1.0, 1.5, 0.0, 0.0),
+    (1.5, 1.0, 0.0, 0.0),
+    (0.5, 1.5, 0.0, 0.0),
+    (0.0, 2.0, 0.0, 0.0),
+    (1.5, 0.5, 0.0, 0.0),
+    REFERENCE_HARD_INITIAL_STATE,
+)
+
 TAIL_SECONDS = 1.0
 THETA_TOLERANCE_RAD = float(np.radians(0.5))
 X_TOLERANCE_M = 0.05
