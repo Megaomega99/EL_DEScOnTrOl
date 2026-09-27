@@ -45,8 +45,14 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 from numpy.typing import ArrayLike
-from scipy.optimize import differential_evolution
 
+from cartpole_lab.controllers.batch import (
+    FAILURE_ERROR,
+    BatchRollout,
+    Gains,
+    run_differential_evolution,
+    simulate_batch,
+)
 from cartpole_lab.controllers.pid import DEFAULT_THETA_REF_FRACTION, PIDGains, pid_force
 from cartpole_lab.dynamics import euler_step, finite_difference_jacobian
 from cartpole_lab.params import CartPoleParams
@@ -66,10 +72,6 @@ GAIN_BOUNDS = (
     (0.0, 0.5),  # kp_x: con 0.5 rad/m, 10 cm de error ya piden el límite de 3°
     (0.0, 0.5),  # kd_x: ídem por m/s
 )
-
-# Error normalizado imputado en cada paso tras un fallo (1 por término, 2 términos).
-FAILURE_ERROR = 2.0
-
 
 @dataclass(frozen=True)
 class TuningConfig:
@@ -104,19 +106,9 @@ class TuningConfig:
 
 
 @dataclass(frozen=True)
-class BatchRollout:
-    itae: np.ndarray  # (...) ITAE por episodio
-    effort: np.ndarray  # (...) Σ (F/F_max)² τ por episodio
-    alive: np.ndarray  # (...) True si sobrevivió todo el horizonte
-    steps_alive: np.ndarray  # (...) pasos ejecutados antes de terminar
-    states: np.ndarray | None = None  # (T+1, ..., 4) solo con record=True (estado float64 interno)
-    forces: np.ndarray | None = None  # (T, ...)
-
-
-@dataclass(frozen=True)
 class TuningRun:
     de_seed: int
-    gains: PIDGains
+    gains: Gains  # PIDGains o FuzzyGains, según el controlador sintonizado
     cost: float
     nit: int
     nfev: int
@@ -156,41 +148,13 @@ def simulate_pid_batch(
     """
     s0 = np.asarray(initial_states, dtype=np.float64)
     batch_shape = np.broadcast_shapes(np.shape(gains.kp_theta), s0.shape[:-1])
-    state = np.broadcast_to(s0, batch_shape + (4,)).copy()
-    integral = np.zeros(batch_shape)
-    alive = np.ones(batch_shape, dtype=bool)
-    steps_alive = np.zeros(batch_shape, dtype=np.int64)
-    itae = np.zeros(batch_shape)
-    effort = np.zeros(batch_shape)
-    p = params
-    states, forces = ([state.copy()], []) if record else (None, None)
 
-    for k in range(n_steps):
-        observation = state.astype(np.float32).astype(np.float64)
-        force, new_integral = pid_force(
-            observation, integral, gains, dt=p.tau, force_limit=p.force_mag, theta_ref_limit=theta_ref_limit
+    def law(observation: np.ndarray, integral: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        return pid_force(
+            observation, integral, gains, dt=params.tau, force_limit=params.force_mag, theta_ref_limit=theta_ref_limit
         )
-        force = np.where(alive, force, 0.0)
-        state = np.where(alive[..., None], euler_step(state, force, p), state)
-        integral = np.where(alive, new_integral, integral)
-        effort += np.where(alive, np.square(force / p.force_mag), 0.0) * p.tau
-        steps_alive += alive
 
-        alive &= (np.abs(state[..., 0]) <= p.x_threshold) & (np.abs(state[..., 2]) <= p.theta_threshold_radians)
-        error = np.abs(state[..., 2]) / p.theta_threshold_radians + np.abs(state[..., 0]) / p.x_threshold
-        itae += (k + 1) * p.tau * np.where(alive, error, FAILURE_ERROR) * p.tau
-        if record:
-            states.append(state.copy())
-            forces.append(force)
-
-    return BatchRollout(
-        itae=itae,
-        effort=effort,
-        alive=alive,
-        steps_alive=steps_alive,
-        states=np.stack(states) if record else None,
-        forces=np.stack(forces) if record else None,
-    )
+    return simulate_batch(law, s0, params, batch_shape=batch_shape, n_steps=n_steps, record=record)
 
 
 def itae_cost(traj: Trajectory, params: CartPoleParams, config: TuningConfig) -> float:
@@ -234,31 +198,27 @@ def _objective(
 def tune_pid(config: TuningConfig, params: CartPoleParams) -> TuningResult:
     """Una ejecución de evolución diferencial por cada semilla de `config.de_seeds`."""
     initial_states = sample_tuning_initial_states(config)
-    runs = []
-    for de_seed in config.de_seeds:
-        result = differential_evolution(
-            _objective,
-            bounds=config.bounds,
-            args=(initial_states, params, config),
-            seed=de_seed,
-            popsize=config.popsize,
-            maxiter=config.maxiter,
-            tol=config.tol,
-            polish=False,  # el criterio no es diferenciable (saturación, fallos): sin L-BFGS final
-            vectorized=True,
-            updating="deferred",  # obligatorio con vectorized=True
+    results = run_differential_evolution(
+        _objective,
+        config.bounds,
+        (initial_states, params, config),
+        de_seeds=config.de_seeds,
+        popsize=config.popsize,
+        maxiter=config.maxiter,
+        tol=config.tol,
+    )
+    runs = [
+        TuningRun(
+            de_seed=de_seed,
+            gains=PIDGains(*(float(v) for v in result.x)),
+            cost=float(result.fun),
+            nit=int(result.nit),
+            nfev=int(result.nfev),
+            converged=bool(result.success),
+            message=str(result.message),
         )
-        runs.append(
-            TuningRun(
-                de_seed=de_seed,
-                gains=PIDGains(*(float(v) for v in result.x)),
-                cost=float(result.fun),
-                nit=int(result.nit),
-                nfev=int(result.nfev),
-                converged=bool(result.success),
-                message=str(result.message),
-            )
-        )
+        for de_seed, result in results
+    ]
     return TuningResult(runs=tuple(runs))
 
 

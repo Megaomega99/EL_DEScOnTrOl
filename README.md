@@ -63,6 +63,7 @@ docs/                decisiones de diseño documentadas
 - [docs/03_pid.md](docs/03_pid.md): PID en cascada, por qué Ziegler–Nichols no aplica, sintonización por optimización (ITAE) y resultados.
 - [docs/04_lqr.md](docs/04_lqr.md): linealización, elección del modelo discreto (Euler frente a ZOH frente a continuo), Q y R por la regla de Bryson, y PID frente a LQR con el criterio de cada uno.
 - [docs/05_mpc.md](docs/05_mpc.md): MPC lineal con restricciones, margen de seguridad, horizonte y solver elegidos con datos (Clarabel frente a OSQP).
+- [docs/06_fuzzy.md](docs/06_fuzzy.md): fuzzy Takagi-Sugeno de orden 0 (membresías, tabla de reglas, inferencia), por qué equivale a un PD con saturación suave, y comparación con el PID.
 
 ## Hoja de ruta
 
@@ -71,7 +72,7 @@ docs/                decisiones de diseño documentadas
 - [x] 3. PID en cascada (sintonizado por evolución diferencial sobre ITAE)
 - [x] 4. LQR (modelo de Euler del simulador, pesos de Bryson)
 - [x] 5. MPC lineal (CVXPY + Clarabel, N = 25, restricciones con margen)
-- [ ] 6. Fuzzy
+- [x] 6. Fuzzy Takagi-Sugeno de orden 0 (tabla MacVicar-Whelan 5×5, mismo protocolo de sintonización que el PID)
 - [ ] 7-8. Discretización + Q-learning / SARSA · 9. DQN · 10. Actor-crítico · 11. Exportación de pesos
 - [ ] 12-13. Evaluación comparativa y figuras
 - [ ] 14. Notebook

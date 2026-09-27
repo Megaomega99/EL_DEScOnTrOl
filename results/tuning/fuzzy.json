@@ -1,0 +1,300 @@
+{
+  "controller": "CascadeFuzzy (Takagi-Sugeno orden 0, tabla MacVicar-Whelan 5x5)",
+  "gains": {
+    "theta_scale": 0.11006625717188395,
+    "theta_dot_scale": 0.5941127893319352,
+    "force_scale": 9.999999896460562,
+    "kp_x": 0.16768770670529265,
+    "kd_x": 0.19015700660511678
+  },
+  "theta_ref_limit_rad": 0.05235987755982988,
+  "tuning": {
+    "method": "differential_evolution (scipy), mismo protocolo que el PID",
+    "config": {
+      "n_initial_states": 32,
+      "initial_state_box": [
+        0.5,
+        0.2,
+        0.1,
+        0.2
+      ],
+      "initial_state_seed": 2026,
+      "n_steps": 500,
+      "effort_weight": 0.1,
+      "theta_ref_fraction": 0.25,
+      "bounds": [
+        [
+          0.01,
+          0.21
+        ],
+        [
+          0.05,
+          3.0
+        ],
+        [
+          0.5,
+          10.0
+        ],
+        [
+          0.0,
+          0.5
+        ],
+        [
+          0.0,
+          0.5
+        ]
+      ],
+      "de_seeds": [
+        0,
+        1,
+        2
+      ],
+      "popsize": 20,
+      "maxiter": 150,
+      "tol": 1e-08
+    },
+    "selected_de_seed": 1,
+    "cost": 0.3344505946945077,
+    "wall_time_s": 119.71785929996986,
+    "runs": [
+      {
+        "de_seed": 0,
+        "cost": 0.3344505952271,
+        "nit": 150,
+        "nfev": 151,
+        "converged": false,
+        "message": "Maximum number of iterations has been exceeded.",
+        "gains": {
+          "theta_scale": 0.1100646455346334,
+          "theta_dot_scale": 0.5940977330493092,
+          "force_scale": 9.99999995169896,
+          "kp_x": 0.16768779640392167,
+          "kd_x": 0.19015756779476395
+        }
+      },
+      {
+        "de_seed": 1,
+        "cost": 0.3344505946945077,
+        "nit": 150,
+        "nfev": 151,
+        "converged": false,
+        "message": "Maximum number of iterations has been exceeded.",
+        "gains": {
+          "theta_scale": 0.11006625717188395,
+          "theta_dot_scale": 0.5941127893319352,
+          "force_scale": 9.999999896460562,
+          "kp_x": 0.16768770670529265,
+          "kd_x": 0.19015700660511678
+        }
+      },
+      {
+        "de_seed": 2,
+        "cost": 0.334450595348992,
+        "nit": 150,
+        "nfev": 151,
+        "converged": false,
+        "message": "Maximum number of iterations has been exceeded.",
+        "gains": {
+          "theta_scale": 0.11006324134845652,
+          "theta_dot_scale": 0.5940871154093312,
+          "force_scale": 9.999999925961745,
+          "kp_x": 0.16769452063544849,
+          "kd_x": 0.19016187505095053
+        }
+      }
+    ]
+  },
+  "rule_table": [
+    [
+      -1.0,
+      -1.0,
+      -1.0,
+      -0.5,
+      0.0
+    ],
+    [
+      -1.0,
+      -1.0,
+      -0.5,
+      0.0,
+      0.5
+    ],
+    [
+      -1.0,
+      -0.5,
+      0.0,
+      0.5,
+      1.0
+    ],
+    [
+      -0.5,
+      0.0,
+      0.5,
+      1.0,
+      1.0
+    ],
+    [
+      0.0,
+      0.5,
+      1.0,
+      1.0,
+      1.0
+    ]
+  ],
+  "labels": [
+    "NG",
+    "NP",
+    "Z",
+    "PP",
+    "PG"
+  ],
+  "equivalent_pd": {
+    "kp_theta": 90.85436493805867,
+    "kd_theta": 16.83182061726917,
+    "state_feedback_K": [
+      15.235160100628805,
+      17.27659407363011,
+      90.85436493805867,
+      16.83182061726917
+    ]
+  },
+  "pid_equivalent_K_for_reference": [
+    27.70497359539953,
+    30.005107403316146,
+    142.69524196791684,
+    26.224969637255796
+  ],
+  "closed_loop_spectral_radius": 0.972816815574341,
+  "comparisons": {
+    "near_boundary": {
+      "Fuzzy": [
+        true,
+        true,
+        true,
+        true,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true
+      ],
+      "PID": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true
+      ],
+      "LQR": [
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true
+      ],
+      "MPC": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    "itae_out_of_sample": {
+      "PID": {
+        "mean": 0.33401891156822683,
+        "std": 0.2733261684549498
+      },
+      "Fuzzy": {
+        "mean": 0.3448334401147197,
+        "std": 0.27697990989581867
+      },
+      "fuzzy_better_count": 1,
+      "n": 32,
+      "fuzzy_vs_pid_relative_mean_pct": 4.749923461978507
+    }
+  },
+  "sensitivity_output_scale_beyond_actuator": {
+    "u_max_N": 40.0,
+    "cost": 0.3250390731477407,
+    "gains": {
+      "theta_scale": 0.14602187555541504,
+      "theta_dot_scale": 0.7945416979460612,
+      "force_scale": 20.835850231245924,
+      "kp_x": 0.1941497218521986,
+      "kd_x": 0.21026959625372704
+    },
+    "equivalent_pd": {
+      "kp_theta": 142.6899233556191,
+      "kd_theta": 26.223734116293542,
+      "state_feedback_K": [
+        27.703208930604983,
+        30.003352573461285,
+        142.6899233556191,
+        26.223734116293542
+      ]
+    }
+  },
+  "sanity_gymnasium_default_ic": {
+    "n_episodes": 50,
+    "seeds": [
+      1000,
+      1049
+    ],
+    "survival_rate": 1.0,
+    "stabilized_rate": 1.0,
+    "termination_reasons": {
+      "time_limit": 50
+    },
+    "last_second_max_abs_theta_deg": {
+      "mean": 3.2816399522539923e-06,
+      "std": 2.2703341010820076e-06,
+      "max": 8.927130805278894e-06
+    },
+    "last_second_max_abs_x_m": {
+      "mean": 3.56245609518524e-07,
+      "std": 3.25383081101018e-07,
+      "max": 1.2608197721419856e-06
+    },
+    "fraction_of_steps_at_force_limit": {
+      "mean": 0.0,
+      "std": 0.0,
+      "max": 0.0
+    },
+    "control_effort_abs_Ns": {
+      "mean": 0.8693324637326897,
+      "std": 0.4164957804517036,
+      "max": 1.401635838280854
+    }
+  },
+  "hard_ic_stabilized": true,
+  "versions": {
+    "gymnasium": "1.3.0",
+    "numpy": "2.2.4"
+  },
+  "generated_by": "scripts/tune_fuzzy.py"
+}
