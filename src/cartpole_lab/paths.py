@@ -8,3 +8,4 @@ RESULTS_DIR = REPO_ROOT / "results"
 FIGURES_DIR = RESULTS_DIR / "figures"
 TUNING_DIR = RESULTS_DIR / "tuning"  # parámetros sintonizados de los controladores clásicos
 WEIGHTS_DIR = RESULTS_DIR / "weights"  # pesos de las redes (Fase 2)
+POLICIES_DIR = RESULTS_DIR / "policies"  # política de CADA semilla de RL (Fase 3: media ± std entre semillas)

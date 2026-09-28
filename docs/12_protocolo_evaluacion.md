@@ -39,7 +39,7 @@ controladores sí fallan.
 | **Tiempo de asentamiento completo** t_s | el menor t a partir del cual, hasta el final del episodio, \|θ\| ≤ 0.5° **y** \|x\| ≤ 5 cm. "No asentado" si el episodio falla o si el estado final está fuera de la banda |
 | **Tiempo de asentamiento del poste** | lo mismo, con solo \|θ\| ≤ 0.5°. Separa el control del poste del de la posición: el RL no centra el carro (Fase 2) |
 | **Esfuerzo** | Σ\|F\|·τ [N·s], la fuerza del actuador, sin contar la perturbación; también Σ F²·τ y la fracción del tiempo con \|F\| = 10 N |
-| **Coste común** | Σ c(s, F) con el coste normalizado de `cost.py`. **Advertencia:** es de la misma familia cuadrática que el criterio del LQR/MPC (doc 04 §4), y los favorece estructuralmente |
+| **Coste común** | Σ c(s, F) con el coste normalizado de `cost.py`, **promediado solo sobre los episodios que sobreviven** (aclaración 1, §8). **Advertencia:** es de la misma familia cuadrática que el criterio del LQR/MPC (doc 04 §4), y los favorece estructuralmente |
 | **Recuperación tras el impulso** | tiempo desde el impulso hasta que \|θ\| ≤ 0.5° hasta el final (solo en los episodios que sobreviven) |
 | **Pico tras el impulso** | max \|θ\| y max \|x\| después del impulso |
 | **J₅₀** | el mayor impulso del barrido con supervivencia ≥ 50 % |
@@ -98,3 +98,12 @@ simulador; MPC: 4.5 ms de cálculo por cada paso de control).
 - **Cambio:** se añaden **1.75 y 2.0 N·s** al barrido. Afecta solo al rango de medida, y
   por igual a todos los métodos. Se decidió tras la prueba de humo y la comprobación con
   LQR y PID, y así se declara. Ningún otro elemento del protocolo cambia.
+
+**Aclaraciones 1 y 2 (revisión del código, antes de interpretar resultados; no cambian ninguna definición).**
+- **Aclaración 1 — el coste común se promedia solo sobre los episodios que sobreviven.** El código
+  ya lo hacía, pero §3 no lo decía. Motivo: un episodio que falla es más corto y acumula menos coste, así que
+  mezclarlo con los de 500 pasos premiaría fallar pronto. Por eso su N puede ser menor que el del resto de métricas.
+- **Aclaración 2 — desfase de una muestra en los picos tras el impulso.** El pulso actúa en la
+  transición del estado 250 al 251, así que el estado 250 es todavía *anterior* al impulso. Los picos se
+  miden ahora desde el estado 251. La recuperación se sigue contando desde t = 5 s (el inicio del pulso),
+  como dice §3.

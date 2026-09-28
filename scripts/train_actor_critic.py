@@ -32,7 +32,7 @@ from cartpole_lab import CartPoleTask, run_episode
 from cartpole_lab.controllers.lqr import LQRController, design_default_lqr
 from cartpole_lab.controllers.pid import CascadePID, load_tuned_gains
 from cartpole_lab.params import load_params
-from cartpole_lab.paths import FIGURES_DIR, RESULTS_DIR, WEIGHTS_DIR
+from cartpole_lab.paths import FIGURES_DIR, POLICIES_DIR, RESULTS_DIR, WEIGHTS_DIR
 from cartpole_lab.plotting import FORCE_CMAP, METHOD_COLORS, MUTED, TEXT_SECONDARY, apply_style
 from cartpole_lab.rl.actor_critic import ACConfig, ACPolicy, export_actor, train_a2c
 from cartpole_lab.rl.dqn import input_scales, network_forward_numpy
@@ -243,6 +243,17 @@ def boundary_checks(best: dict) -> dict:
     return out
 
 
+def save_seed_policies(runs: list[dict], config: ACConfig) -> None:
+    """Actor de CADA semilla (mejor en validación y final), para la evaluación de la Fase 3."""
+    params = load_params()
+    for r in runs:
+        for which in ("best", "final"):
+            export_actor(r[f"{which}_layers"], POLICIES_DIR / "actor_critic" / f"seed_{r['seed']:02d}_{which}.json",
+                         input_scales=input_scales(params), force_limit=params.force_mag, log_std=r[f"{which}_log_std"],
+                         metadata={"method": "actor_critic", "seed": r["seed"], "which": which,
+                                   "checkpoint_step": r["best_eval_step"] if which == "best" else config.total_steps})
+
+
 def main(config: ACConfig = ACConfig(), seeds: tuple[int, ...] = SEEDS) -> int:
     with ProcessPoolExecutor(max_workers=min(12, len(seeds))) as pool:
         runs = list(pool.map(_train_job, [(s, config.to_dict()) for s in seeds]))
@@ -255,6 +266,7 @@ def main(config: ACConfig = ACConfig(), seeds: tuple[int, ...] = SEEDS) -> int:
     RECORD_PATH.parent.mkdir(parents=True, exist_ok=True)
     RECORD_PATH.write_text(json.dumps(record, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     best = export_best(runs, config)
+    save_seed_policies(runs, config)
     record["boundary_checks_exported_seed"] = boundary_checks(best)
     RECORD_PATH.write_text(json.dumps(record, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     plot_learning_curves(runs)

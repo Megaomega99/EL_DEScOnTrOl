@@ -33,7 +33,7 @@ import numpy as np
 import torch
 
 from cartpole_lab.params import load_params
-from cartpole_lab.paths import FIGURES_DIR, RESULTS_DIR, WEIGHTS_DIR
+from cartpole_lab.paths import FIGURES_DIR, POLICIES_DIR, RESULTS_DIR, WEIGHTS_DIR
 from cartpole_lab.plotting import FORCE_CMAP, METHOD_COLORS, MUTED, TEXT_SECONDARY, apply_style
 from cartpole_lab.rl.dqn import (
     DQNConfig, DQNPolicy, export_network, input_scales, network_forward_numpy, q_upper_bound, train_dqn,
@@ -204,6 +204,18 @@ def export_best(runs: list[dict], variant: str, config: DQNConfig) -> dict:
     return best
 
 
+def save_seed_policies(runs: list[dict], base: DQNConfig) -> None:
+    """Red de CADA semilla y variante (mejor en validación y final), para la evaluación de la Fase 3."""
+    scales = input_scales(load_params())
+    for r in runs:
+        folder = POLICIES_DIR / r["variant"]
+        for which, key in (("best", "best_layers"), ("final", "final_layers")):
+            export_network(r[key], folder / f"seed_{r['seed']:02d}_{which}.json", input_scales=scales,
+                           force_levels=config_for(r["variant"], base).force_levels,
+                           metadata={"method": r["variant"], "seed": r["seed"], "which": which,
+                                     "checkpoint_step": r["best_eval_step"] if which == "best" else base.total_steps})
+
+
 def main(base: DQNConfig = DQNConfig(), seeds: tuple[int, ...] = SEEDS) -> int:
     jobs = [(v, s, config_for(v, base).to_dict()) for v in VARIANTS for s in seeds]
     with ProcessPoolExecutor(max_workers=min(12, len(jobs))) as pool:
@@ -222,6 +234,7 @@ def main(base: DQNConfig = DQNConfig(), seeds: tuple[int, ...] = SEEDS) -> int:
     RECORD_PATH.parent.mkdir(parents=True, exist_ok=True)
     RECORD_PATH.write_text(json.dumps(record, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     best = {v: export_best(runs, v, config_for(v, base)) for v in VARIANTS}
+    save_seed_policies(runs, base)
     plot_learning_curves(runs)
     plot_value_diagnostics(runs)
     plot_policies(best)

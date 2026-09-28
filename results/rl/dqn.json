@@ -169,8 +169,8 @@
     }
    },
    "wall_time_per_run_s": {
-    "mean": 148.5868224200094,
-    "std": 0.7263112602782646
+    "mean": 176.53915339000523,
+    "std": 0.7380942580574374
    }
   },
   "double_dqn": {
@@ -270,8 +270,8 @@
     }
    },
    "wall_time_per_run_s": {
-    "mean": 120.77043470997596,
-    "std": 17.949247320094063
+    "mean": 136.421814979997,
+    "std": 24.753077624422367
    }
   }
  },
@@ -279,7 +279,7 @@
   {
    "variant": "dqn",
    "seed": 0,
-   "wall_time_s": 146.77728489995934,
+   "wall_time_s": 175.87044120009523,
    "eval_steps": [
     5000,
     10000,
@@ -446,7 +446,7 @@
   {
    "variant": "dqn",
    "seed": 1,
-   "wall_time_s": 148.47543930006213,
+   "wall_time_s": 175.8252683999017,
    "eval_steps": [
     5000,
     10000,
@@ -613,7 +613,7 @@
   {
    "variant": "dqn",
    "seed": 2,
-   "wall_time_s": 148.30872560001444,
+   "wall_time_s": 176.59469270007685,
    "eval_steps": [
     5000,
     10000,
@@ -780,7 +780,7 @@
   {
    "variant": "dqn",
    "seed": 3,
-   "wall_time_s": 148.84395730006509,
+   "wall_time_s": 177.73330550000537,
    "eval_steps": [
     5000,
     10000,
@@ -947,7 +947,7 @@
   {
    "variant": "dqn",
    "seed": 4,
-   "wall_time_s": 148.83420939999633,
+   "wall_time_s": 176.12066230003256,
    "eval_steps": [
     5000,
     10000,
@@ -1114,7 +1114,7 @@
   {
    "variant": "dqn",
    "seed": 5,
-   "wall_time_s": 148.6680879999185,
+   "wall_time_s": 176.19722460000776,
    "eval_steps": [
     5000,
     10000,
@@ -1281,7 +1281,7 @@
   {
    "variant": "dqn",
    "seed": 6,
-   "wall_time_s": 148.86466660001315,
+   "wall_time_s": 175.58883070002776,
    "eval_steps": [
     5000,
     10000,
@@ -1448,7 +1448,7 @@
   {
    "variant": "dqn",
    "seed": 7,
-   "wall_time_s": 148.4865532000549,
+   "wall_time_s": 177.12329379993025,
    "eval_steps": [
     5000,
     10000,
@@ -1615,7 +1615,7 @@
   {
    "variant": "dqn",
    "seed": 8,
-   "wall_time_s": 149.56141399999615,
+   "wall_time_s": 176.86264509998728,
    "eval_steps": [
     5000,
     10000,
@@ -1782,7 +1782,7 @@
   {
    "variant": "dqn",
    "seed": 9,
-   "wall_time_s": 149.04788590001408,
+   "wall_time_s": 177.47516959998757,
    "eval_steps": [
     5000,
     10000,
@@ -1949,7 +1949,7 @@
   {
    "variant": "double_dqn",
    "seed": 0,
-   "wall_time_s": 155.96604720002506,
+   "wall_time_s": 183.88146379997488,
    "eval_steps": [
     5000,
     10000,
@@ -2116,7 +2116,7 @@
   {
    "variant": "double_dqn",
    "seed": 1,
-   "wall_time_s": 153.63344390003476,
+   "wall_time_s": 182.8803501999937,
    "eval_steps": [
     5000,
     10000,
@@ -2283,7 +2283,7 @@
   {
    "variant": "double_dqn",
    "seed": 2,
-   "wall_time_s": 112.17408729996532,
+   "wall_time_s": 124.65376959997229,
    "eval_steps": [
     5000,
     10000,
@@ -2450,7 +2450,7 @@
   {
    "variant": "double_dqn",
    "seed": 3,
-   "wall_time_s": 112.34315500000957,
+   "wall_time_s": 125.19634689996019,
    "eval_steps": [
     5000,
     10000,
@@ -2617,7 +2617,7 @@
   {
    "variant": "double_dqn",
    "seed": 4,
-   "wall_time_s": 112.63451809994876,
+   "wall_time_s": 124.86041510000359,
    "eval_steps": [
     5000,
     10000,
@@ -2784,7 +2784,7 @@
   {
    "variant": "double_dqn",
    "seed": 5,
-   "wall_time_s": 112.73022819997277,
+   "wall_time_s": 125.08637969999108,
    "eval_steps": [
     5000,
     10000,
@@ -2951,7 +2951,7 @@
   {
    "variant": "double_dqn",
    "seed": 6,
-   "wall_time_s": 111.31153829989489,
+   "wall_time_s": 124.08626120002009,
    "eval_steps": [
     5000,
     10000,
@@ -3118,7 +3118,7 @@
   {
    "variant": "double_dqn",
    "seed": 7,
-   "wall_time_s": 111.7797798999818,
+   "wall_time_s": 124.84051679994445,
    "eval_steps": [
     5000,
     10000,
@@ -3285,7 +3285,7 @@
   {
    "variant": "double_dqn",
    "seed": 8,
-   "wall_time_s": 112.26492539991159,
+   "wall_time_s": 124.33713530004025,
    "eval_steps": [
     5000,
     10000,
@@ -3452,7 +3452,7 @@
   {
    "variant": "double_dqn",
    "seed": 9,
-   "wall_time_s": 112.86662380001508,
+   "wall_time_s": 124.39551120006945,
    "eval_steps": [
     5000,
     10000,

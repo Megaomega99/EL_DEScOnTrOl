@@ -34,7 +34,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from cartpole_lab.paths import FIGURES_DIR, RESULTS_DIR, WEIGHTS_DIR
+from cartpole_lab.paths import FIGURES_DIR, POLICIES_DIR, RESULTS_DIR, WEIGHTS_DIR
 from cartpole_lab.plotting import FORCE_CMAP, METHOD_COLORS, MUTED, TEXT_PRIMARY, TEXT_SECONDARY, apply_style
 from cartpole_lab.rl.discretization import DISCRETIZATIONS
 from cartpole_lab.rl.evaluation import (
@@ -230,6 +230,18 @@ def export_weights(chosen_runs: list[dict], chosen: str) -> None:
         (WEIGHTS_DIR / f"tabular_{method}.json").write_text(json.dumps(payload) + "\n", encoding="utf-8")
 
 
+def save_seed_policies(chosen_runs: list[dict], chosen: str) -> None:
+    """Política de CADA semilla (mejor en validación y final), para la evaluación de la Fase 3."""
+    for r in chosen_runs:
+        folder = POLICIES_DIR / f"tabular_{r['method']}"
+        folder.mkdir(parents=True, exist_ok=True)
+        for which, key in (("best", "best_q_table"), ("final", "q_table")):
+            payload = {"method": r["method"], "seed": r["seed"], "which": which, "discretization": chosen,
+                       "edges": [list(e) for e in DISCRETIZATIONS[chosen].edges], "force_levels": list(FORCE_LEVELS),
+                       "checkpoint_episode": r["best_eval_episode"] if which == "best" else None, "q_table": r[key]}
+            (folder / f"seed_{r['seed']:02d}_{which}.json").write_text(json.dumps(payload) + "\n", encoding="utf-8")
+
+
 def regenerate_artifacts() -> int:
     """Reentrena SOLO las semillas seleccionadas (determinista) para regenerar pesos y mapa de política.
     Falla si los números no coinciden EXACTAMENTE con results/rl/tabular.json (prueba de reproducibilidad)."""
@@ -279,6 +291,7 @@ def main(n_episodes: int = N_EPISODES, eval_every: int = EVAL_EVERY, seeds: tupl
     RECORD_PATH.parent.mkdir(parents=True, exist_ok=True)
     RECORD_PATH.write_text(json.dumps(record, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     export_weights(chosen_runs, chosen)
+    save_seed_policies(chosen_runs, chosen)
     plot_learning_curves(results, chosen)
     plot_discretization_study(selection, results)
     plot_policy_map(results, chosen)

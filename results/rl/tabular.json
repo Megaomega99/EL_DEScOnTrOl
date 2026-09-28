@@ -153,9 +153,9 @@
      "std": 0.1927083753742092
     },
     "termination_reasons_total": {
-     "pole_angle_limit+cart_position_limit": 3,
      "cart_position_limit": 89,
      "pole_angle_limit": 164,
+     "pole_angle_limit+cart_position_limit": 3,
      "time_limit": 244
     }
    },
@@ -177,9 +177,9 @@
      "std": 0.17302700585239322
     },
     "termination_reasons_total": {
-     "time_limit": 466,
+     "pole_angle_limit": 32,
      "cart_position_limit": 2,
-     "pole_angle_limit": 32
+     "time_limit": 466
     }
    }
   },
@@ -241,9 +241,9 @@
      "std": 0.15329282405022368
     },
     "termination_reasons_total": {
-     "time_limit": 278,
+     "pole_angle_limit": 122,
      "cart_position_limit": 100,
-     "pole_angle_limit": 122
+     "time_limit": 278
     }
    },
    "test_best_checkpoint": {
@@ -264,9 +264,9 @@
      "std": 0.15713070621827419
     },
     "termination_reasons_total": {
-     "time_limit": 391,
+     "pole_angle_limit": 97,
      "cart_position_limit": 12,
-     "pole_angle_limit": 97
+     "time_limit": 391
     }
    }
   }
@@ -276,7 +276,7 @@
    "method": "q_learning",
    "discretization": "sin_carro",
    "seed": 0,
-   "wall_time_s": 129.13869739999063,
+   "wall_time_s": 115.5463965999661,
    "eval_episodes": [
     250,
     500,
@@ -372,7 +372,7 @@
    "method": "q_learning",
    "discretization": "sin_carro",
    "seed": 1,
-   "wall_time_s": 134.5235102000879,
+   "wall_time_s": 117.5765129000647,
    "eval_episodes": [
     250,
     500,
@@ -468,7 +468,7 @@
    "method": "q_learning",
    "discretization": "sin_carro",
    "seed": 2,
-   "wall_time_s": 119.64966850006022,
+   "wall_time_s": 110.32749299996067,
    "eval_episodes": [
     250,
     500,
@@ -564,7 +564,7 @@
    "method": "q_learning",
    "discretization": "sin_carro",
    "seed": 3,
-   "wall_time_s": 142.73268560005818,
+   "wall_time_s": 124.59353950002696,
    "eval_episodes": [
     250,
     500,
@@ -660,7 +660,7 @@
    "method": "q_learning",
    "discretization": "sin_carro",
    "seed": 4,
-   "wall_time_s": 128.9352861000225,
+   "wall_time_s": 115.69304349995218,
    "eval_episodes": [
     250,
     500,
@@ -756,7 +756,7 @@
    "method": "q_learning",
    "discretization": "sin_carro",
    "seed": 5,
-   "wall_time_s": 155.87765719997697,
+   "wall_time_s": 134.69813750009052,
    "eval_episodes": [
     250,
     500,
@@ -852,7 +852,7 @@
    "method": "q_learning",
    "discretization": "sin_carro",
    "seed": 6,
-   "wall_time_s": 123.59992489998695,
+   "wall_time_s": 113.14548159996048,
    "eval_episodes": [
     250,
     500,
@@ -948,7 +948,7 @@
    "method": "q_learning",
    "discretization": "sin_carro",
    "seed": 7,
-   "wall_time_s": 133.11467149993405,
+   "wall_time_s": 119.35888039995916,
    "eval_episodes": [
     250,
     500,
@@ -1044,7 +1044,7 @@
    "method": "q_learning",
    "discretization": "sin_carro",
    "seed": 8,
-   "wall_time_s": 121.11997919995338,
+   "wall_time_s": 111.78274729999248,
    "eval_episodes": [
     250,
     500,
@@ -1140,7 +1140,7 @@
    "method": "q_learning",
    "discretization": "sin_carro",
    "seed": 9,
-   "wall_time_s": 135.3900399999693,
+   "wall_time_s": 118.16048580000643,
    "eval_episodes": [
     250,
     500,
@@ -1236,7 +1236,7 @@
    "method": "sarsa",
    "discretization": "sin_carro",
    "seed": 0,
-   "wall_time_s": 135.76236340007745,
+   "wall_time_s": 119.36056020006072,
    "eval_episodes": [
     250,
     500,
@@ -1332,7 +1332,7 @@
    "method": "sarsa",
    "discretization": "sin_carro",
    "seed": 1,
-   "wall_time_s": 120.54316390003078,
+   "wall_time_s": 109.2577326000901,
    "eval_episodes": [
     250,
     500,
@@ -1428,7 +1428,7 @@
    "method": "sarsa",
    "discretization": "sin_carro",
    "seed": 2,
-   "wall_time_s": 171.3943341000704,
+   "wall_time_s": 106.26366309996229,
    "eval_episodes": [
     250,
     500,
@@ -1524,7 +1524,7 @@
    "method": "sarsa",
    "discretization": "sin_carro",
    "seed": 3,
-   "wall_time_s": 173.37219060002826,
+   "wall_time_s": 109.05488729989156,
    "eval_episodes": [
     250,
     500,
@@ -1620,7 +1620,7 @@
    "method": "sarsa",
    "discretization": "sin_carro",
    "seed": 4,
-   "wall_time_s": 181.17738790006842,
+   "wall_time_s": 114.9768356999848,
    "eval_episodes": [
     250,
     500,
@@ -1716,7 +1716,7 @@
    "method": "sarsa",
    "discretization": "sin_carro",
    "seed": 5,
-   "wall_time_s": 183.46649560006335,
+   "wall_time_s": 117.54649039998185,
    "eval_episodes": [
     250,
     500,
@@ -1812,7 +1812,7 @@
    "method": "sarsa",
    "discretization": "sin_carro",
    "seed": 6,
-   "wall_time_s": 170.72808079991955,
+   "wall_time_s": 108.95127960003447,
    "eval_episodes": [
     250,
     500,
@@ -1908,7 +1908,7 @@
    "method": "sarsa",
    "discretization": "sin_carro",
    "seed": 7,
-   "wall_time_s": 175.18200909998268,
+   "wall_time_s": 111.30233400000725,
    "eval_episodes": [
     250,
     500,
@@ -2004,7 +2004,7 @@
    "method": "sarsa",
    "discretization": "sin_carro",
    "seed": 8,
-   "wall_time_s": 165.7857524000574,
+   "wall_time_s": 106.04460769996513,
    "eval_episodes": [
     250,
     500,
@@ -2100,7 +2100,7 @@
    "method": "sarsa",
    "discretization": "sin_carro",
    "seed": 9,
-   "wall_time_s": 166.55045330000576,
+   "wall_time_s": 107.7419869999867,
    "eval_episodes": [
     250,
     500,
@@ -2196,7 +2196,7 @@
    "method": "q_learning",
    "discretization": "boxes_1983",
    "seed": 0,
-   "wall_time_s": 201.0848303999519,
+   "wall_time_s": 128.43094430002384,
    "eval_episodes": [
     250,
     500,
@@ -2292,7 +2292,7 @@
    "method": "q_learning",
    "discretization": "boxes_1983",
    "seed": 1,
-   "wall_time_s": 224.06437219993677,
+   "wall_time_s": 142.4595686000539,
    "eval_episodes": [
     250,
     500,
@@ -2388,7 +2388,7 @@
    "method": "q_learning",
    "discretization": "boxes_1983",
    "seed": 2,
-   "wall_time_s": 187.37508269993123,
+   "wall_time_s": 120.40659830009099,
    "eval_episodes": [
     250,
     500,
@@ -2484,7 +2484,7 @@
    "method": "q_learning",
    "discretization": "boxes_1983",
    "seed": 3,
-   "wall_time_s": 206.19263329997193,
+   "wall_time_s": 132.3312649000436,
    "eval_episodes": [
     250,
     500,
@@ -2580,7 +2580,7 @@
    "method": "q_learning",
    "discretization": "boxes_1983",
    "seed": 4,
-   "wall_time_s": 167.4853258000221,
+   "wall_time_s": 109.88577509997413,
    "eval_episodes": [
     250,
     500,
@@ -2676,7 +2676,7 @@
    "method": "q_learning",
    "discretization": "boxes_1983",
    "seed": 5,
-   "wall_time_s": 229.40633030002937,
+   "wall_time_s": 147.24135329993442,
    "eval_episodes": [
     250,
     500,
@@ -2772,7 +2772,7 @@
    "method": "q_learning",
    "discretization": "boxes_1983",
    "seed": 6,
-   "wall_time_s": 211.56430140009616,
+   "wall_time_s": 134.68269040004816,
    "eval_episodes": [
     250,
     500,
@@ -2868,7 +2868,7 @@
    "method": "q_learning",
    "discretization": "boxes_1983",
    "seed": 7,
-   "wall_time_s": 208.49535370001104,
+   "wall_time_s": 133.5066036999924,
    "eval_episodes": [
     250,
     500,
@@ -2964,7 +2964,7 @@
    "method": "q_learning",
    "discretization": "boxes_1983",
    "seed": 8,
-   "wall_time_s": 177.34083599993028,
+   "wall_time_s": 115.14306509995367,
    "eval_episodes": [
     250,
     500,
@@ -3060,7 +3060,7 @@
    "method": "q_learning",
    "discretization": "boxes_1983",
    "seed": 9,
-   "wall_time_s": 165.8691322999075,
+   "wall_time_s": 105.59773040004075,
    "eval_episodes": [
     250,
     500,
@@ -3156,7 +3156,7 @@
    "method": "sarsa",
    "discretization": "boxes_1983",
    "seed": 0,
-   "wall_time_s": 186.3329933999339,
+   "wall_time_s": 119.18103049998172,
    "eval_episodes": [
     250,
     500,
@@ -3252,7 +3252,7 @@
    "method": "sarsa",
    "discretization": "boxes_1983",
    "seed": 1,
-   "wall_time_s": 126.69079680007417,
+   "wall_time_s": 82.92901809990872,
    "eval_episodes": [
     250,
     500,
@@ -3348,7 +3348,7 @@
    "method": "sarsa",
    "discretization": "boxes_1983",
    "seed": 2,
-   "wall_time_s": 202.4906872001011,
+   "wall_time_s": 129.8898271000944,
    "eval_episodes": [
     250,
     500,
@@ -3444,7 +3444,7 @@
    "method": "sarsa",
    "discretization": "boxes_1983",
    "seed": 3,
-   "wall_time_s": 191.12636280001607,
+   "wall_time_s": 122.72738660010509,
    "eval_episodes": [
     250,
     500,
@@ -3540,7 +3540,7 @@
    "method": "sarsa",
    "discretization": "boxes_1983",
    "seed": 4,
-   "wall_time_s": 180.66516139998566,
+   "wall_time_s": 114.78826870000921,
    "eval_episodes": [
     250,
     500,
@@ -3636,7 +3636,7 @@
    "method": "sarsa",
    "discretization": "boxes_1983",
    "seed": 5,
-   "wall_time_s": 181.40632730000652,
+   "wall_time_s": 116.64004600001499,
    "eval_episodes": [
     250,
     500,
@@ -3732,7 +3732,7 @@
    "method": "sarsa",
    "discretization": "boxes_1983",
    "seed": 6,
-   "wall_time_s": 165.53249490004964,
+   "wall_time_s": 99.0420230999589,
    "eval_episodes": [
     250,
     500,
@@ -3828,7 +3828,7 @@
    "method": "sarsa",
    "discretization": "boxes_1983",
    "seed": 7,
-   "wall_time_s": 183.09778029995505,
+   "wall_time_s": 119.21197550010402,
    "eval_episodes": [
     250,
     500,
@@ -3924,7 +3924,7 @@
    "method": "sarsa",
    "discretization": "boxes_1983",
    "seed": 8,
-   "wall_time_s": 175.0727704000892,
+   "wall_time_s": 115.66346299997531,
    "eval_episodes": [
     250,
     500,
@@ -4020,7 +4020,7 @@
    "method": "sarsa",
    "discretization": "boxes_1983",
    "seed": 9,
-   "wall_time_s": 149.84230000001844,
+   "wall_time_s": 99.76223660004325,
    "eval_episodes": [
     250,
     500,
@@ -4116,7 +4116,7 @@
    "method": "q_learning",
    "discretization": "fina",
    "seed": 0,
-   "wall_time_s": 249.66764220001642,
+   "wall_time_s": 161.91110230004415,
    "eval_episodes": [
     250,
     500,
@@ -4212,7 +4212,7 @@
    "method": "q_learning",
    "discretization": "fina",
    "seed": 1,
-   "wall_time_s": 228.86117839999497,
+   "wall_time_s": 149.55782059999183,
    "eval_episodes": [
     250,
     500,
@@ -4308,7 +4308,7 @@
    "method": "q_learning",
    "discretization": "fina",
    "seed": 2,
-   "wall_time_s": 200.63559109997004,
+   "wall_time_s": 129.6246281999629,
    "eval_episodes": [
     250,
     500,
@@ -4404,7 +4404,7 @@
    "method": "q_learning",
    "discretization": "fina",
    "seed": 3,
-   "wall_time_s": 331.6321042999625,
+   "wall_time_s": 220.3116457000142,
    "eval_episodes": [
     250,
     500,
@@ -4500,7 +4500,7 @@
    "method": "q_learning",
    "discretization": "fina",
    "seed": 4,
-   "wall_time_s": 265.9030835001031,
+   "wall_time_s": 177.01924890000373,
    "eval_episodes": [
     250,
     500,
@@ -4596,7 +4596,7 @@
    "method": "q_learning",
    "discretization": "fina",
    "seed": 5,
-   "wall_time_s": 226.37464779999573,
+   "wall_time_s": 149.39497999998275,
    "eval_episodes": [
     250,
     500,
@@ -4692,7 +4692,7 @@
    "method": "q_learning",
    "discretization": "fina",
    "seed": 6,
-   "wall_time_s": 237.2893273999216,
+   "wall_time_s": 160.3940009000944,
    "eval_episodes": [
     250,
     500,
@@ -4788,7 +4788,7 @@
    "method": "q_learning",
    "discretization": "fina",
    "seed": 7,
-   "wall_time_s": 284.98264250007924,
+   "wall_time_s": 191.97445820004214,
    "eval_episodes": [
     250,
     500,
@@ -4884,7 +4884,7 @@
    "method": "q_learning",
    "discretization": "fina",
    "seed": 8,
-   "wall_time_s": 274.3079855000833,
+   "wall_time_s": 182.7252142999787,
    "eval_episodes": [
     250,
     500,
@@ -4980,7 +4980,7 @@
    "method": "q_learning",
    "discretization": "fina",
    "seed": 9,
-   "wall_time_s": 330.4650340999942,
+   "wall_time_s": 197.80353529995773,
    "eval_episodes": [
     250,
     500,
@@ -5076,7 +5076,7 @@
    "method": "sarsa",
    "discretization": "fina",
    "seed": 0,
-   "wall_time_s": 168.18861160008237,
+   "wall_time_s": 110.54745690000709,
    "eval_episodes": [
     250,
     500,
@@ -5172,7 +5172,7 @@
    "method": "sarsa",
    "discretization": "fina",
    "seed": 1,
-   "wall_time_s": 198.13687849999405,
+   "wall_time_s": 128.65486180002335,
    "eval_episodes": [
     250,
     500,
@@ -5268,7 +5268,7 @@
    "method": "sarsa",
    "discretization": "fina",
    "seed": 2,
-   "wall_time_s": 198.24619020009413,
+   "wall_time_s": 122.82974710001145,
    "eval_episodes": [
     250,
     500,
@@ -5364,7 +5364,7 @@
    "method": "sarsa",
    "discretization": "fina",
    "seed": 3,
-   "wall_time_s": 182.56807689997368,
+   "wall_time_s": 109.99833840003703,
    "eval_episodes": [
     250,
     500,
@@ -5460,7 +5460,7 @@
    "method": "sarsa",
    "discretization": "fina",
    "seed": 4,
-   "wall_time_s": 158.36179029999766,
+   "wall_time_s": 98.28497879998758,
    "eval_episodes": [
     250,
     500,
@@ -5556,7 +5556,7 @@
    "method": "sarsa",
    "discretization": "fina",
    "seed": 5,
-   "wall_time_s": 169.30355910002254,
+   "wall_time_s": 100.78897780005354,
    "eval_episodes": [
     250,
     500,
@@ -5652,7 +5652,7 @@
    "method": "sarsa",
    "discretization": "fina",
    "seed": 6,
-   "wall_time_s": 182.18597029999364,
+   "wall_time_s": 98.99625250010286,
    "eval_episodes": [
     250,
     500,
@@ -5748,7 +5748,7 @@
    "method": "sarsa",
    "discretization": "fina",
    "seed": 7,
-   "wall_time_s": 192.79825540003367,
+   "wall_time_s": 101.14667260006536,
    "eval_episodes": [
     250,
     500,
@@ -5844,7 +5844,7 @@
    "method": "sarsa",
    "discretization": "fina",
    "seed": 8,
-   "wall_time_s": 147.7922940000426,
+   "wall_time_s": 77.23057309992146,
    "eval_episodes": [
     250,
     500,
@@ -5940,7 +5940,7 @@
    "method": "sarsa",
    "discretization": "fina",
    "seed": 9,
-   "wall_time_s": 148.3346804000903,
+   "wall_time_s": 72.2720805000281,
    "eval_episodes": [
     250,
     500,
