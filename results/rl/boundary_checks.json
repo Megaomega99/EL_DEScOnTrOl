@@ -1,0 +1,143 @@
+{
+ "protocol": "Comprobación común de las políticas de RL EXPORTADAS fuera de la distribución de test.\n\nUso:  python scripts/rl_boundary_checks.py      (segundos)\n\nEl test común (semillas 1000–1049) empieza siempre cerca del equilibrio (±0.05, la distribución\noficial de CartPole-v1). Aquí se aplican a TODAS las políticas de RL exportadas las mismas pruebas\nque a los controladores de la Fase 1:\n* el estado difícil de referencia (x = 0.5 m, ẋ = 0.2 m/s, θ = 0.1 rad, θ̇ = 0.2 rad/s);\n* los 12 estados recuperables cerca de la frontera (NEAR_BOUNDARY_INITIAL_STATES);\n* los 2 estados irrecuperables: deben fallar de forma EXPLÍCITA (motivo registrado).\n\nSalida: results/rl/boundary_checks.json\n",
+ "results": {
+  "tabular_q_learning": {
+   "reference_hard": {
+    "reason": "cart_position_limit",
+    "stabilized": false
+   },
+   "near_boundary_survived": 1,
+   "near_boundary_stabilized": 0,
+   "near_boundary_reasons": [
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "time_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit"
+   ],
+   "unrecoverable_fail_explicitly": true
+  },
+  "tabular_sarsa": {
+   "reference_hard": {
+    "reason": "pole_angle_limit",
+    "stabilized": false
+   },
+   "near_boundary_survived": 1,
+   "near_boundary_stabilized": 0,
+   "near_boundary_reasons": [
+    "pole_angle_limit",
+    "pole_angle_limit",
+    "pole_angle_limit",
+    "time_limit",
+    "pole_angle_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "pole_angle_limit",
+    "pole_angle_limit",
+    "cart_position_limit",
+    "pole_angle_limit"
+   ],
+   "unrecoverable_fail_explicitly": true
+  },
+  "dqn": {
+   "reference_hard": {
+    "reason": "cart_position_limit",
+    "stabilized": false
+   },
+   "near_boundary_survived": 0,
+   "near_boundary_stabilized": 0,
+   "near_boundary_reasons": [
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit"
+   ],
+   "unrecoverable_fail_explicitly": true
+  },
+  "double_dqn": {
+   "reference_hard": {
+    "reason": "time_limit",
+    "stabilized": false
+   },
+   "near_boundary_survived": 6,
+   "near_boundary_stabilized": 0,
+   "near_boundary_reasons": [
+    "time_limit",
+    "time_limit",
+    "time_limit",
+    "time_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "time_limit",
+    "time_limit"
+   ],
+   "unrecoverable_fail_explicitly": true
+  },
+  "actor_critic": {
+   "reference_hard": {
+    "reason": "cart_position_limit",
+    "stabilized": false
+   },
+   "near_boundary_survived": 1,
+   "near_boundary_stabilized": 0,
+   "near_boundary_reasons": [
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "time_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit",
+    "cart_position_limit"
+   ],
+   "unrecoverable_fail_explicitly": true
+  },
+  "actor_critic_final": {
+   "reference_hard": {
+    "reason": "time_limit",
+    "stabilized": false
+   },
+   "near_boundary_survived": 3,
+   "near_boundary_stabilized": 0,
+   "near_boundary_reasons": [
+    "pole_angle_limit",
+    "pole_angle_limit",
+    "pole_angle_limit",
+    "time_limit",
+    "pole_angle_limit",
+    "pole_angle_limit",
+    "pole_angle_limit",
+    "pole_angle_limit",
+    "pole_angle_limit",
+    "pole_angle_limit",
+    "time_limit",
+    "time_limit"
+   ],
+   "unrecoverable_fail_explicitly": true
+  }
+ }
+}
