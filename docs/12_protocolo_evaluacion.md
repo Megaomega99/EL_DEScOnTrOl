@@ -22,14 +22,14 @@ elegir nada en ninguna fase.
 | Escenario | Condiciones iniciales | Qué mide |
 |---|---|---|
 | **Nominal** | 50 CI de la distribución oficial (U(±0.05)⁴; semillas 1000–1049) | comportamiento "de catálogo" |
-| **Impulso** | las mismas 50 CI; en t = 5 s (paso 250), una fuerza externa sobre el carro durante un paso (τ = 0.02 s), con impulso J ∈ {0.25, 0.5, 0.75, 1.0, 1.25, 1.5} N·s y signo alternado (+ en las CI pares, − en las impares) | robustez ante una perturbación externa |
+| **Impulso** | las mismas 50 CI; en t = 5 s (paso 250), una fuerza externa sobre el carro durante un paso (τ = 0.02 s), con impulso J ∈ {0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0} N·s (tras la enmienda 1, §8) y signo alternado (+ en las CI pares, − en las impares) | robustez ante una perturbación externa |
 | **Región de atracción** | 2 mallas de 21 × 21: (θ₀, θ̇₀) ∈ [−0.2, 0.2] rad × [−2, 2] rad/s con x = ẋ = 0; y (x₀, ẋ₀) ∈ [−2.3, 2.3] m × [−3, 3] m/s con θ = θ̇ = 0 | desde dónde se recupera cada método |
 
-**Justificación del rango de impulsos (física, no ajustada):** partiendo del equilibrio, la
-búsqueda global de rescate (`best_rescue_violation`) da una violación mínima de 0.59 para
-J = 1.0 N·s (recuperable por un controlador ideal) y de 1.26 para J = 1.5 N·s
-(irrecuperable). El barrido va de lo trivial a más allá del límite físico. **A 1.5 N·s
-ningún método debería sobrevivir**, y eso sirve de control de la propia medida.
+**Justificación del rango de impulsos:** partiendo del equilibrio, la búsqueda global de
+rescate (`best_rescue_violation`) dio una violación mínima de 0.59 para J = 1.0 N·s y de
+1.26 para J = 1.5 N·s, y se declaró 1.5 N·s como irrecuperable. **Esa afirmación resultó
+falsa** (enmienda 1, §8): el barrido se amplió hasta 2.0 N·s, donde los mejores
+controladores sí fallan.
 
 ## 3. Métricas (por episodio)
 
@@ -85,4 +85,16 @@ simulador; MPC: 4.5 ms de cálculo por cada paso de control).
 
 ## 8. Registro de cambios posteriores
 
-*(vacío al declararse)*
+**Enmienda 1: rango de impulsos (antes de la evaluación completa).**
+- **Qué pasó:** la prueba de humo (4 CI por método) mostró que PID, LQR y MPC **sobreviven a
+  J = 1.5 N·s**, el valor que §2 declaraba irrecuperable. **El control de la medida hizo su
+  trabajo: la afirmación era falsa.**
+- **Causa:** `best_rescue_violation` es una búsqueda heurística, y su resultado es una cota
+  *superior* de la violación mínima. Un valor > 1 era evidencia, no demostración, y aquí
+  resultó demasiado pesimista.
+- **Comprobación adicional:** con 10 CI, LQR y PID sobreviven 10/10 a 1.5 N·s y 0/10 a 2.0
+  N·s (y 0/10 a 2.5–4.0). El límite real de los mejores controladores está entre 1.5 y
+  2.0 N·s. Con 2.0 N·s, la búsqueda da 4.45: un margen amplio.
+- **Cambio:** se añaden **1.75 y 2.0 N·s** al barrido. Afecta solo al rango de medida, y
+  por igual a todos los métodos. Se decidió tras la prueba de humo y la comprobación con
+  LQR y PID, y así se declara. Ningún otro elemento del protocolo cambia.
