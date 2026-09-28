@@ -3,6 +3,17 @@
 Pensado para quien construya el artifact web: **solo inferencia, sin reentrenar**. Todo
 está en [`results/weights/`](../results/weights/), en JSON plano, sin dependencias.
 
+**Por qué JSON y no ONNX** (la especificación admitía los dos):
+- **Las redes son diminutas:** 4-64-64-5, con 4 805 parámetros, y el actor 4-64-64-1, con 4 545.
+  Su inferencia (§2) son tres productos matriz-vector y un ReLU: unas diez líneas de
+  JavaScript, sin motor de ejecución. ONNX obligaría a cargar onnxruntime-web, un motor de varios
+  MB, para hacer lo mismo.
+- **Las políticas tabulares no son redes:** son tablas con los bordes de sus cajas, y ONNX no
+  las representa de forma natural. Con JSON, un solo formato sirve para todas.
+- **El JSON ya está probado:** la inferencia de referencia en NumPy lee exactamente estos
+  archivos, y los tests comprueban que reproduce las salidas de la red de PyTorch (valores Q y
+  acción media) con un error menor de 10⁻⁵.
+
 ## 1. Archivos
 
 | Archivo | Método | Cómo se eligió | Test (50 CI oficiales) |
