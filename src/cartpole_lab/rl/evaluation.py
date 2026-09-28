@@ -19,11 +19,17 @@ SOLVED_THRESHOLD = 475.0  # reward_threshold oficial de CartPole-v1 (gymnasium/e
 MOVING_WINDOW = 100
 
 
+def first_crossing(values: Sequence[float], threshold: float = SOLVED_THRESHOLD) -> int | None:
+    """Índice de la primera evaluación con valor ≥ umbral (None si nunca)."""
+    solved = np.flatnonzero(np.asarray(values) >= threshold)
+    return int(solved[0]) if solved.size else None
+
+
 def episodes_to_solve_greedy(
     eval_episodes: Sequence[int], eval_means: Sequence[float], threshold: float = SOLVED_THRESHOLD
 ) -> int | None:
-    solved = np.flatnonzero(np.asarray(eval_means) >= threshold)
-    return int(np.asarray(eval_episodes)[solved[0]]) if solved.size else None
+    index = first_crossing(eval_means, threshold)
+    return int(np.asarray(eval_episodes)[index]) if index is not None else None
 
 
 def moving_average(values: Sequence[float], window: int = MOVING_WINDOW) -> np.ndarray:

@@ -42,3 +42,9 @@ def test_parsimony_prefers_the_smaller_candidate_within_one_std():
 def test_parsimony_keeps_the_best_when_it_is_clearly_ahead():
     candidates = {"a": {"mean": 400.0, "std": 10.0, "n_states": 500}, "b": {"mean": 300.0, "std": 5.0, "n_states": 10}}
     assert select_by_parsimony(candidates)["chosen"] == "a"
+
+
+def test_first_crossing_returns_the_index_not_the_value():
+    from cartpole_lab.rl.evaluation import first_crossing
+
+    assert first_crossing([100, 480, 490]) == 1 and first_crossing([1, 2]) is None

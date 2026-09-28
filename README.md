@@ -66,6 +66,7 @@ docs/                decisiones de diseño documentadas
 - [docs/05_mpc.md](docs/05_mpc.md): MPC lineal con restricciones, margen de seguridad, horizonte y solver elegidos con datos (Clarabel frente a OSQP).
 - [docs/06_fuzzy.md](docs/06_fuzzy.md): fuzzy Takagi-Sugeno de orden 0 (membresías, tabla de reglas, inferencia), por qué equivale a un PD con saturación suave, y comparación con el PID.
 - [docs/07_08_tabular.md](docs/07_08_tabular.md): discretización en cajas (BOXES de 1983, verificada en `pole.c`, y estudio de sensibilidad), Q-learning y SARSA con 10 semillas, inestabilidad y calidad del control aprendido.
+- [docs/09_dqn.md](docs/09_dqn.md): DQN y Double DQN con 10 semillas: aprende rápido pero no converge; diagnóstico de sobreestimación y de la diferencia entre acciones; redes exportadas a JSON.
 
 ## Hoja de ruta
 
@@ -76,6 +77,7 @@ docs/                decisiones de diseño documentadas
 - [x] 5. MPC lineal (CVXPY + Clarabel, N = 25, restricciones con margen)
 - [x] 6. Fuzzy Takagi-Sugeno de orden 0 (tabla MacVicar-Whelan 5×5, mismo protocolo de sintonización que el PID)
 - [x] 7-8. Discretización (BOXES 1983) + Q-learning / SARSA tabulares (10 semillas)
-- [ ] 9. DQN · 10. Actor-crítico · 11. Exportación de pesos
+- [x] 9. DQN y Double DQN (10 semillas; no converge, documentado; mejores redes exportadas a JSON)
+- [ ] 10. Actor-crítico · 11. Exportación de pesos (actor-crítico)
 - [ ] 12-13. Evaluación comparativa y figuras
 - [ ] 14. Notebook
