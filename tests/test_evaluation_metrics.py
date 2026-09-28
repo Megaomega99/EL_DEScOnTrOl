@@ -17,14 +17,18 @@ from cartpole_lab.evaluation.metrics import (
 from cartpole_lab.evaluation.protocol import (
     IMPULSES_NS,
     MAIN_METHODS,
+    SETTLING_HOLD_S,
     cart_grid_states,
     impulse_sign,
     pole_grid_states,
 )
 from cartpole_lab.rollout import Trajectory
+from cartpole_lab.sanity import TAIL_SECONDS
 
 DT = 0.02
 BAND = np.radians(0.5)
+HOLD = int(round(SETTLING_HOLD_S / DT))  # 50 muestras: permanencia mínima en la banda (enmienda 2)
+INSIDE = [0.1] * HOLD  # cola que cumple la permanencia
 
 
 def synthetic(theta_deg, x=None, reason="time_limit"):
@@ -44,13 +48,13 @@ def synthetic(theta_deg, x=None, reason="time_limit"):
 
 
 def test_settling_time_is_the_start_of_the_final_run_inside_the_band():
-    # fuera, fuera, dentro, FUERA, dentro, dentro -> se asienta en el índice 4 (t = 0.08 s)
-    traj = synthetic([3, 2, 0.1, 1.0, 0.2, 0.1])
+    # fuera, fuera, dentro, FUERA, dentro... -> se asienta en el índice 4 (t = 0.08 s)
+    traj = synthetic([3, 2, 0.1, 1.0] + INSIDE)
     assert settling_time(traj, x_band=None) == pytest.approx(4 * DT)
 
 
 def test_already_inside_from_the_start_settles_at_zero():
-    assert settling_time(synthetic([0.1, 0.2, 0.0]), x_band=None) == 0.0
+    assert settling_time(synthetic(INSIDE), x_band=None) == 0.0
 
 
 def test_ending_outside_the_band_is_not_settled():
@@ -58,24 +62,35 @@ def test_ending_outside_the_band_is_not_settled():
 
 
 def test_failed_episode_is_not_settled_even_if_inside():
-    assert settling_time(synthetic([0.1, 0.1], reason="pole_angle_limit"), x_band=None) is None
+    assert settling_time(synthetic(INSIDE, reason="pole_angle_limit"), x_band=None) is None
+
+
+def test_entering_the_band_too_late_is_not_settling():
+    # Enmienda 2: una política que oscila puede cruzar la banda justo al final del episodio; eso no es
+    # asentarse. Hace falta permanecer dentro al menos SETTLING_HOLD_S (el mismo 1 s de sanity.is_stabilized).
+    assert settling_time(synthetic([3.0] * 10 + [0.1] * (HOLD - 1)), x_band=None) is None
+    assert settling_time(synthetic([3.0] * 10 + INSIDE), x_band=None) == pytest.approx(10 * DT)
+
+
+def test_hold_equals_the_project_wide_stabilization_tail():
+    assert SETTLING_HOLD_S == TAIL_SECONDS
 
 
 def test_full_settling_requires_the_cart_to_be_centred_too():
-    traj = synthetic([0.1, 0.1, 0.1], x=[0.0, 0.3, 0.3])  # poste perfecto, carro a 30 cm
+    traj = synthetic(INSIDE, x=[0.0] + [0.3] * (HOLD - 1))  # poste perfecto, carro a 30 cm
     assert settling_time(traj, x_band=None) == 0.0
     assert settling_time(traj) is None
 
 
 def test_recovery_time_is_measured_from_the_impulse():
-    traj = synthetic([0.1, 0.1, 5.0, 2.0, 0.2, 0.1])  # impulso en el paso 2
+    traj = synthetic([0.1, 0.1, 5.0, 2.0] + INSIDE)  # impulso en el paso 2
     assert settling_time(traj, x_band=None, from_step=2) == pytest.approx(2 * DT)
 
 
 def test_episode_metrics_with_impulse():
     # El pulso actúa en la transición 2 -> 3: el estado 2 es PREVIO al impulso y no cuenta para el pico
     # (aquí se le da un valor grande a propósito), pero la recuperación se cuenta desde t_2.
-    traj = synthetic([0.1, 0.1, 6.0, 5.0, 2.0, 0.2, 0.1], x=[0, 0, 0.3, 0.1, 0.2, 0.01, 0.0])
+    traj = synthetic([0.1, 0.1, 6.0, 5.0, 2.0] + INSIDE, x=[0, 0, 0.3, 0.1, 0.2] + [0.0] * HOLD)
     m = episode_metrics(traj, impulse_step=2)
     assert m["survived"] and m["recovery_time_s"] == pytest.approx(3 * DT)
     assert m["peak_abs_theta_after_deg"] == pytest.approx(5.0)
@@ -84,13 +99,14 @@ def test_episode_metrics_with_impulse():
 
 
 def test_grid_outcome_codes():
-    assert grid_outcome(synthetic([0.1, 0.1])) == STABILIZED
-    assert grid_outcome(synthetic([0.1, 0.1], x=[0.5, 0.5])) == SURVIVED
+    assert grid_outcome(synthetic(INSIDE)) == STABILIZED
+    assert grid_outcome(synthetic(INSIDE, x=[0.5] * HOLD)) == SURVIVED
+    assert grid_outcome(synthetic([3.0] * 5 + [0.1] * (HOLD - 1))) == SURVIVED  # entra tarde en la banda
     assert grid_outcome(synthetic([0.1, 20.0], reason="pole_angle_limit")) == FAILED
 
 
 def test_aggregation_and_across_seed_statistics():
-    episodes = [episode_metrics(synthetic([3, 0.1, 0.1])), episode_metrics(synthetic([3, 2, 0.1])),
+    episodes = [episode_metrics(synthetic([3] + INSIDE)), episode_metrics(synthetic([3, 2] + INSIDE)),
                 episode_metrics(synthetic([3, 3], reason="pole_angle_limit"))]
     summary = aggregate_episodes(episodes)
     assert summary["n_episodes"] == 3 and summary["survival_rate"] == pytest.approx(2 / 3)
@@ -101,7 +117,8 @@ def test_aggregation_and_across_seed_statistics():
 
 
 def test_protocol_constants_match_the_declared_document():
-    assert IMPULSES_NS == (0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0)  # tras la enmienda de §8
+    assert IMPULSES_NS == (0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0)  # tras la enmienda 1 de §8
+    assert SETTLING_HOLD_S == 1.0  # enmienda 2 de §8
     assert [impulse_sign(i) for i in range(4)] == [1.0, -1.0, 1.0, -1.0]
     assert len(pole_grid_states()) == len(cart_grid_states()) == 21 * 21
     assert max(abs(s[2]) for s in pole_grid_states()) <= np.radians(12)  # CI válidas

@@ -1,0 +1,251 @@
+{
+ "impulses_Ns": [
+  1.75,
+  2.0
+ ],
+ "impulse_step": 250,
+ "projection": "s·(estado) con s = signo del impulso, justo antes del pulso",
+ "methods": {
+  "PID": {
+   "method": "PID",
+   "n_episodes": 100,
+   "n_survived": 0,
+   "failure_reasons": {
+    "pole_angle_limit": 100
+   },
+   "median_before_impulse": {
+    "s_theta_deg": {
+     "survived": null,
+     "failed": 6.817898651790477e-05
+    },
+    "s_theta_dot": {
+     "survived": null,
+     "failed": -7.410790203721263e-08
+    },
+    "s_x": {
+     "survived": null,
+     "failed": 7.341046739384183e-06
+    },
+    "s_x_dot": {
+     "survived": null,
+     "failed": -1.5229463770083385e-05
+    }
+   },
+   "survival_if_impulse_brakes_pole_rotation": {
+    "n": 50,
+    "rate": 0.0
+   },
+   "survival_otherwise": {
+    "n": 50,
+    "rate": 0.0
+   }
+  },
+  "LQR": {
+   "method": "LQR",
+   "n_episodes": 100,
+   "n_survived": 0,
+   "failure_reasons": {
+    "pole_angle_limit": 100
+   },
+   "median_before_impulse": {
+    "s_theta_deg": {
+     "survived": null,
+     "failed": 0.00048429666522554083
+    },
+    "s_theta_dot": {
+     "survived": null,
+     "failed": 1.9926130789826857e-06
+    },
+    "s_x": {
+     "survived": null,
+     "failed": 0.0001486160617787391
+    },
+    "s_x_dot": {
+     "survived": null,
+     "failed": -0.00011506965529406443
+    }
+   },
+   "survival_if_impulse_brakes_pole_rotation": {
+    "n": 50,
+    "rate": 0.0
+   },
+   "survival_otherwise": {
+    "n": 50,
+    "rate": 0.0
+   }
+  },
+  "Fuzzy": {
+   "method": "Fuzzy",
+   "n_episodes": 100,
+   "n_survived": 0,
+   "failure_reasons": {
+    "pole_angle_limit": 100
+   },
+   "median_before_impulse": {
+    "s_theta_deg": {
+     "survived": null,
+     "failed": 8.92194339692674e-05
+    },
+    "s_theta_dot": {
+     "survived": null,
+     "failed": 4.168391797065851e-06
+    },
+    "s_x": {
+     "survived": null,
+     "failed": 6.904245310579427e-06
+    },
+    "s_x_dot": {
+     "survived": null,
+     "failed": -2.136030889232643e-05
+    }
+   },
+   "survival_if_impulse_brakes_pole_rotation": {
+    "n": 56,
+    "rate": 0.0
+   },
+   "survival_otherwise": {
+    "n": 44,
+    "rate": 0.0
+   }
+  },
+  "Q-learning": {
+   "method": "Q-learning",
+   "n_episodes": 998,
+   "n_survived": 122,
+   "failure_reasons": {
+    "pole_angle_limit": 852,
+    "cart_position_limit": 24
+   },
+   "median_before_impulse": {
+    "s_theta_deg": {
+     "survived": 0.2108116309529548,
+     "failed": -0.32040685534815594
+    },
+    "s_theta_dot": {
+     "survived": 0.8206356167793274,
+     "failed": -0.13667861372232437
+    },
+    "s_x": {
+     "survived": 0.02302701398730278,
+     "failed": -0.019486084580421448
+    },
+    "s_x_dot": {
+     "survived": -0.5543462336063385,
+     "failed": 0.11085548251867294
+    }
+   },
+   "survival_if_impulse_brakes_pole_rotation": {
+    "n": 504,
+    "rate": 0.2400793650793651
+   },
+   "survival_otherwise": {
+    "n": 494,
+    "rate": 0.0020242914979757085
+   }
+  },
+  "SARSA": {
+   "method": "SARSA",
+   "n_episodes": 940,
+   "n_survived": 90,
+   "failure_reasons": {
+    "pole_angle_limit": 836,
+    "cart_position_limit": 14
+   },
+   "median_before_impulse": {
+    "s_theta_deg": {
+     "survived": 0.8556942901101161,
+     "failed": -0.5886896022930355
+    },
+    "s_theta_dot": {
+     "survived": 0.7606319785118103,
+     "failed": -0.04973309859633446
+    },
+    "s_x": {
+     "survived": 0.03622964397072792,
+     "failed": -0.018754076212644577
+    },
+    "s_x_dot": {
+     "survived": -0.539865106344223,
+     "failed": 0.049718063324689865
+    }
+   },
+   "survival_if_impulse_brakes_pole_rotation": {
+    "n": 476,
+    "rate": 0.18277310924369747
+   },
+   "survival_otherwise": {
+    "n": 464,
+    "rate": 0.00646551724137931
+   }
+  },
+  "DQN": {
+   "method": "DQN",
+   "n_episodes": 996,
+   "n_survived": 124,
+   "failure_reasons": {
+    "cart_position_limit": 35,
+    "pole_angle_limit": 837
+   },
+   "median_before_impulse": {
+    "s_theta_deg": {
+     "survived": 0.41351954261048696,
+     "failed": -0.07125930024473022
+    },
+    "s_theta_dot": {
+     "survived": 0.5609457790851593,
+     "failed": -0.020995344035327435
+    },
+    "s_x": {
+     "survived": 0.010486762272194028,
+     "failed": -0.02163804415613413
+    },
+    "s_x_dot": {
+     "survived": -0.37129366397857666,
+     "failed": 0.027731221169233322
+    }
+   },
+   "survival_if_impulse_brakes_pole_rotation": {
+    "n": 500,
+    "rate": 0.222
+   },
+   "survival_otherwise": {
+    "n": 496,
+    "rate": 0.02620967741935484
+   }
+  },
+  "Actor-crítico": {
+   "method": "Actor-crítico",
+   "n_episodes": 1000,
+   "n_survived": 0,
+   "failure_reasons": {
+    "pole_angle_limit": 1000
+   },
+   "median_before_impulse": {
+    "s_theta_deg": {
+     "survived": null,
+     "failed": 0.0016687731290081385
+    },
+    "s_theta_dot": {
+     "survived": null,
+     "failed": -1.60877298185369e-05
+    },
+    "s_x": {
+     "survived": null,
+     "failed": -0.006405862688552588
+    },
+    "s_x_dot": {
+     "survived": null,
+     "failed": 0.00730383675545454
+    }
+   },
+   "survival_if_impulse_brakes_pole_rotation": {
+    "n": 496,
+    "rate": 0.0
+   },
+   "survival_otherwise": {
+    "n": 504,
+    "rate": 0.0
+   }
+  }
+ }
+}

@@ -36,7 +36,7 @@ controladores sí fallan.
 | Métrica | Definición |
 |---|---|
 | **Supervivencia** | el episodio llega a los 500 pasos |
-| **Tiempo de asentamiento completo** t_s | el menor t a partir del cual, hasta el final del episodio, \|θ\| ≤ 0.5° **y** \|x\| ≤ 5 cm. "No asentado" si el episodio falla o si el estado final está fuera de la banda |
+| **Tiempo de asentamiento completo** t_s | el menor t a partir del cual, hasta el final del episodio, \|θ\| ≤ 0.5° **y** \|x\| ≤ 5 cm. "No asentado" si el episodio falla, o si el tramo final dentro de la banda dura **menos de 1 s** (enmienda 2, §8; antes bastaba con que el estado final estuviera dentro) |
 | **Tiempo de asentamiento del poste** | lo mismo, con solo \|θ\| ≤ 0.5°. Separa el control del poste del de la posición: el RL no centra el carro (Fase 2) |
 | **Esfuerzo** | Σ\|F\|·τ [N·s], la fuerza del actuador, sin contar la perturbación; también Σ F²·τ y la fracción del tiempo con \|F\| = 10 N |
 | **Coste común** | Σ c(s, F) con el coste normalizado de `cost.py`, **promediado solo sobre los episodios que sobreviven** (aclaración 1, §8). **Advertencia:** es de la misma familia cuadrática que el criterio del LQR/MPC (doc 04 §4), y los favorece estructuralmente |
@@ -107,3 +107,20 @@ simulador; MPC: 4.5 ms de cálculo por cada paso de control).
   transición del estado 250 al 251, así que el estado 250 es todavía *anterior* al impulso. Los picos se
   miden ahora desde el estado 251. La recuperación se sigue contando desde t = 5 s (el inicio del pulso),
   como dice §3.
+
+**Enmienda 2: el asentamiento exige permanecer 1 s en la banda (A LA VISTA de los resultados).**
+- **Qué pasó:** en la primera evaluación completa (commit e7db492, `results/metrics/comparison.json` de
+  ese commit), Q-learning y SARSA aparecían "asentados" con un tiempo de 9.98–10.0 s: 10.0 s es la duración
+  del episodio. Sus políticas oscilan, y a veces la última muestra cae dentro de la banda por casualidad. Con
+  la definición de §3, eso contaba como asentarse en la última muestra.
+- **Causa:** un error de especificación. §3 decía que las bandas "son las del criterio de estabilizado de todo
+  el proyecto (`sanity.py`)", pero ese criterio pide además que el estado permanezca en la banda durante el
+  **último segundo** (`TAIL_SECONDS = 1.0`), y esa parte se omitió. Con el horizonte finito, "hasta el final
+  del episodio" puede durar una sola muestra.
+- **Cambio:** un tiempo de asentamiento solo cuenta si el tramo final dentro de la banda dura ≥ 1 s
+  (`SETTLING_HOLD_S = TAIL_SECONDS`). Se aplica a los dos tiempos de asentamiento, a la recuperación tras el
+  impulso (que debe ocurrir antes de t = 9 s) y a la clase "estabiliza" de las mallas, que ahora coincide
+  exactamente con `is_stabilized`.
+- **A quién afecta:** hace **más estricta** la métrica. Perjudica justo a los métodos que oscilan (el RL
+  tabular y el DQN) y no a los clásicos, que se asientan en < 1 s. Como se decidió a la vista de los resultados,
+  el documento de resultados (docs/13) da también las cifras con la definición original.

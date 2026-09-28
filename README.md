@@ -47,6 +47,7 @@ src/cartpole_lab/
     seeding.py       semillas globales (random, NumPy, PyTorch)
     controllers/     PID, LQR, MPC, fuzzy                       (Fase 1, pasos 3-6)
     rl/              tabulares, DQN, actor-crítico              (Fase 2)
+    evaluation/      protocolo, métricas y políticas de la comparación (Fase 3)
 tests/               sanity checks y verificación contra Gymnasium
 scripts/             scripts ejecutables (verificación, entrenamiento, figuras)
 notebooks/           notebook docente único                     (Fase 4)
@@ -54,6 +55,7 @@ results/figures/     figuras para las diapositivas
 results/tuning/      parámetros sintonizados de los controladores clásicos (JSON con metadatos)
 results/weights/     pesos exportados (JSON/ONNX) para inferencia en el navegador
 results/rl/          registros de entrenamiento de RL (curvas, semillas, test)
+results/policies/    la política de cada semilla de RL (mejor y final), para la evaluación
 results/metrics/     métricas de la comparación (Fase 3)
 docs/                decisiones de diseño documentadas
 ```
@@ -69,6 +71,8 @@ docs/                decisiones de diseño documentadas
 - [docs/09_dqn.md](docs/09_dqn.md): DQN y Double DQN con 10 semillas: aprende rápido pero no converge; diagnóstico de sobreestimación y de la diferencia entre acciones; redes exportadas a JSON.
 - [docs/10_actor_critico.md](docs/10_actor_critico.md): A2C + GAE con acción continua (tanh): converge en 10/10 semillas, esfuerzo de controlador clásico, pero generaliza mal fuera de la distribución de entrenamiento (comparación con todos los métodos).
 - [docs/11_exportacion.md](docs/11_exportacion.md): formato JSON de las políticas exportadas para la inferencia en el navegador.
+- [docs/12_protocolo_evaluacion.md](docs/12_protocolo_evaluacion.md): protocolo de la comparación, pre-registrado antes de ver resultados, con el registro de sus enmiendas.
+- [docs/13_resultados_comparativos.md](docs/13_resultados_comparativos.md): resultados de los 8 métodos (nominal, impulso lateral, regiones de atracción, coste de aprendizaje), con N, dispersión entre semillas y limitaciones.
 
 ## Hoja de ruta
 
@@ -82,5 +86,5 @@ docs/                decisiones de diseño documentadas
 - [x] 9. DQN y Double DQN (10 semillas; no converge, documentado; mejores redes exportadas a JSON)
 - [x] 10. Actor-crítico A2C + GAE, acción continua (10 semillas; converge)
 - [x] 11. Exportación de pesos a JSON (tabulares, DQN, Double DQN, actor-crítico) con inferencia de referencia en NumPy
-- [ ] 12-13. Evaluación comparativa y figuras
+- [x] 12-13. Evaluación comparativa (protocolo pre-registrado, 1728 tareas) y figuras finales
 - [ ] 14. Notebook

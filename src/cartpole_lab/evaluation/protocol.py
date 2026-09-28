@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import numpy as np
 
-from cartpole_lab.sanity import SANITY_SEEDS, THETA_TOLERANCE_RAD, X_TOLERANCE_M
+from cartpole_lab.sanity import SANITY_SEEDS, TAIL_SECONDS, THETA_TOLERANCE_RAD, X_TOLERANCE_M
 
 NOMINAL_SEEDS = SANITY_SEEDS  # 1000–1049: distribución oficial de CartPole-v1
 THETA_BAND_RAD = THETA_TOLERANCE_RAD  # 0.5°
 X_BAND_M = X_TOLERANCE_M  # 5 cm
+# Enmienda 2 (docs/12 §8): asentarse exige PERMANECER en la banda al menos este tiempo al final del episodio.
+# Sin ella, una política que oscila y cruza la banda en la última muestra contaba como "asentada en 10 s".
+# Es el mismo segundo final del criterio de "estabilizado" de todo el proyecto (sanity.is_stabilized).
+SETTLING_HOLD_S = TAIL_SECONDS
 
 IMPULSE_STEP = 250  # t = 5 s: mitad del episodio
 # Enmienda (docs/12 §8): el barrido inicial acababa en 1.5 N·s, pero PID/LQR/MPC sobreviven a 1.5.

@@ -6,7 +6,7 @@ from collections.abc import Sequence
 
 import numpy as np
 
-from cartpole_lab.evaluation.protocol import THETA_BAND_RAD, X_BAND_M
+from cartpole_lab.evaluation.protocol import SETTLING_HOLD_S, THETA_BAND_RAD, X_BAND_M
 from cartpole_lab.rollout import Trajectory
 
 # Códigos de resultado para las mallas de región de atracción.
@@ -14,10 +14,11 @@ FAILED, SURVIVED, STABILIZED = 0, 1, 2
 
 
 def settling_time(traj: Trajectory, *, theta_band: float = THETA_BAND_RAD, x_band: float | None = X_BAND_M,
-                  from_step: int = 0) -> float | None:
+                  from_step: int = 0, hold_s: float = SETTLING_HOLD_S) -> float | None:
     """Menor t (desde `from_step`) a partir del cual el estado queda DENTRO de la banda hasta el final.
 
-    None si el episodio no sobrevive o si su último estado está fuera de la banda ("no asentado").
+    None ("no asentado") si el episodio no sobrevive, o si el tramo final dentro de la banda dura menos
+    de `hold_s` (enmienda 2: cruzar la banda en las últimas muestras no es asentarse).
     `x_band=None` ignora la posición: tiempo de asentamiento del poste solo.
     """
     if traj.termination_reason != "time_limit":
@@ -26,10 +27,11 @@ def settling_time(traj: Trajectory, *, theta_band: float = THETA_BAND_RAD, x_ban
     inside = np.abs(states[:, 2]) <= theta_band
     if x_band is not None:
         inside &= np.abs(states[:, 0]) <= x_band
-    if not inside[-1]:
-        return None
     outside = np.flatnonzero(~inside)
     first_inside_for_good = 0 if outside.size == 0 else int(outside[-1]) + 1
+    hold_samples = max(int(round(hold_s / traj.dt)), 1)  # al menos el último estado, como antes de la enmienda
+    if inside.size - first_inside_for_good < hold_samples:
+        return None
     return float(traj.times[from_step + first_inside_for_good] - traj.times[from_step])
 
 
