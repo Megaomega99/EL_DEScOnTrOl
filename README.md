@@ -55,7 +55,7 @@ scripts/             scripts ejecutables (verificación, entrenamiento, figuras)
 notebooks/           notebooks de la charla: completo (recalcula) y corto (carga resultados)  (Fase 4)
 results/figures/     figuras para las diapositivas
 results/tuning/      parámetros sintonizados de los controladores clásicos (JSON con metadatos)
-results/weights/     pesos exportados (JSON/ONNX) para inferencia en el navegador
+results/weights/     pesos exportados (JSON plano; ONNX descartado, ver docs/11) para inferencia en el navegador
 results/rl/          registros de entrenamiento de RL (curvas, semillas, test)
 results/policies/    la política de cada semilla de RL (mejor y final), para la evaluación
 results/metrics/     métricas de la comparación (Fase 3)
