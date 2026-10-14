@@ -10,7 +10,7 @@ refuerzo → comparación. Difieren en qué recalculan:
 | Sintonización del PID y del fuzzy (evolución diferencial, 3 ejecuciones) | en vivo (`RESINTONIZAR`) | se cargan de `results/tuning/` |
 | RL: Q-learning, SARSA, DQN y actor-crítico | **una** semilla de cada uno, en vivo (`REENTRENAR`) | se cargan de `results/policies/` y `results/rl/` |
 | Evaluación comparativa (10 semillas por método de RL, 1728 tareas) | se carga; `REEVALUAR = True` relanza los scripts | se carga de `results/metrics/` |
-| Duración | la marcan la sintonización y los entrenamientos (ver §3) | ~15 s |
+| Duración | ~11 min (ver §3) | ~15 s |
 
 La versión corta **no entrena ni sintoniza nada**. Un test lo garantiza: sustituye las funciones de
 entrenamiento y sintonización por otras que fallan, y ejecuta el notebook entero.
@@ -42,14 +42,18 @@ Los registros de `results/` se generaron en Windows 11 (Python 3.13, versiones d
 En esa máquina, `--regenerate-artifacts` comprueba que una semilla se reproduce exactamente
 (docs 07_08, 09 y 10).
 
-En otra plataforma no se reproduce bit a bit. En una prueba en Linux (contenedor de 4 núcleos, mismas
-versiones fijadas) con la semilla exportada de cada método:
+En otra plataforma, el aprendizaje por refuerzo no se reproduce bit a bit. En la ejecución completa del
+notebook en Linux (contenedor de 4 núcleos, mismas versiones fijadas), con la semilla exportada de cada
+método:
 
 | Método | Resultado frente al registro |
 |---|---|
 | Q-learning (semilla 0) | curva de validación **idéntica** en las 21 primeras evaluaciones (5 250 episodios); diverge a partir del episodio 5 500 |
 | DQN (semilla 1) | distinta desde la primera evaluación (5 000 pasos) |
+| SARSA (semilla 0) | distinta en 18 de 40 evaluaciones; mejor política en el episodio 6 500 frente a 5 750 |
 | Actor-crítico (semilla 0) | distinta; mejor red en el paso 143 360 frente a 163 840 |
+| PID y fuzzy (evolución diferencial, 3 ejecuciones) | **idénticos** al registro (ganancias con 6 cifras) |
+| LQR, y supervivencia de PID/LQR/MPC en los 12 estados cerca de la frontera | **idénticos** al registro |
 
 Interpretación: el Q-learning, que solo usa NumPy y Gymnasium, coincide durante miles de episodios y
 luego se separa. Encaja con pequeñas diferencias de redondeo entre plataformas (p. ej. en las funciones
@@ -70,6 +74,12 @@ completa): sintonización del PID 112 s y del fuzzy 120 s; una semilla de Q-lear
 de DQN ~177 s y de actor-crítico ~25 s.
 
 Con todas las banderas en `True` (salvo `REEVALUAR`), la suma registrada es de unos 11 minutos (112 + 120 + 2 × 120 + 177 + 25 s), más las simulaciones.
+
+Ejecución completa medida con `jupyter nbconvert --execute` en Linux con 4 núcleos: sintonización del
+PID 58 s y del fuzzy 178 s; Q-learning 98 s, SARSA 90 s, DQN 171 s y actor-crítico 19 s; los 36
+episodios cerca de la frontera (con el MPC) 23 s. En total, unos 11 minutos. El peor caso de una
+resolución del MPC fue de 19.6 ms (media 3.5 ms), al límite del periodo de control de 20 ms: el tiempo
+de cálculo depende de la máquina.
 
 ## 4. Uso
 
