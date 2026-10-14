@@ -17,6 +17,7 @@ python -m pip install -r requirements.txt   # versiones exactas (==)
 python -m pip install -e . --no-deps        # el paquete cartpole_lab, editable
 python -m pytest -q                         # debe pasar todo
 python scripts/verify_environment.py        # constantes y convenciones de signo
+jupyter lab notebooks/                      # notebooks de la charla (Fase 4)
 ```
 
 ## Uso mínimo
@@ -48,9 +49,10 @@ src/cartpole_lab/
     controllers/     PID, LQR, MPC, fuzzy                       (Fase 1, pasos 3-6)
     rl/              tabulares, DQN, actor-crítico              (Fase 2)
     evaluation/      protocolo, métricas y políticas de la comparación (Fase 3)
+    teaching.py      utilidades comunes de los dos notebooks: simular, dibujar, leer registros (Fase 4)
 tests/               sanity checks y verificación contra Gymnasium
 scripts/             scripts ejecutables (verificación, entrenamiento, figuras)
-notebooks/           notebook docente único                     (Fase 4)
+notebooks/           notebooks de la charla: completo (recalcula) y corto (carga resultados)  (Fase 4)
 results/figures/     figuras para las diapositivas
 results/tuning/      parámetros sintonizados de los controladores clásicos (JSON con metadatos)
 results/weights/     pesos exportados (JSON/ONNX) para inferencia en el navegador
@@ -73,6 +75,7 @@ docs/                decisiones de diseño documentadas
 - [docs/11_exportacion.md](docs/11_exportacion.md): formato JSON de las políticas exportadas para la inferencia en el navegador.
 - [docs/12_protocolo_evaluacion.md](docs/12_protocolo_evaluacion.md): protocolo de la comparación, pre-registrado antes de ver resultados, con el registro de sus enmiendas.
 - [docs/13_resultados_comparativos.md](docs/13_resultados_comparativos.md): resultados de los 8 métodos (nominal, impulso lateral, regiones de atracción, coste de aprendizaje), con N, dispersión entre semillas y limitaciones.
+- [docs/14_notebooks.md](docs/14_notebooks.md): los dos notebooks de la charla (qué recalcula cada uno, cuánto tarda) y la reproducibilidad entre plataformas.
 
 ## Hoja de ruta
 
@@ -87,4 +90,4 @@ docs/                decisiones de diseño documentadas
 - [x] 10. Actor-crítico A2C + GAE, acción continua (10 semillas; converge)
 - [x] 11. Exportación de pesos a JSON (tabulares, DQN, Double DQN, actor-crítico) con inferencia de referencia en NumPy
 - [x] 12-13. Evaluación comparativa (protocolo pre-registrado, 1728 tareas) y figuras finales
-- [ ] 14. Notebook
+- [x] 14. Notebooks de la charla: completo (sintoniza y entrena una semilla por método en vivo) y corto (solo carga resultados)
