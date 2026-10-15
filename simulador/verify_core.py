@@ -122,7 +122,7 @@ def main() -> None:
     report["MPC F0 (máx |ΔF| N)"] = max(abs(j["u0"] - c["u0_ref"]) for j, c in zip(js["mpc"], mpc_cases))
     report["MPC plan (máx |ΔF| N)"] = max(float(np.max(np.abs(np.asarray(j["forces"]) - c["forces_ref"])))
                                          for j, c in zip(js["mpc"], mpc_cases))
-    report["MPC iteraciones ADMM"] = [j["iters"] for j in js["mpc"]]
+    report["MPC iteraciones (punto interior)"] = [j["iters"] for j in js["mpc"]]
     report["MPC convergió"] = all(j["converged"] for j in js["mpc"])
     report["cajas distintas"] = sum(j != BOXES_1983.index(s) for j, s in zip(js["box"], traj))
     report["tabular acciones distintas"] = sum(j != tab(np.asarray(s)) for j, s in zip(js["tab"], traj))
