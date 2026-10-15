@@ -1,0 +1,980 @@
+<title>Simulador Cart Pole</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&family=Rubik:wght@500;600&display=swap">
+<!--
+  Simulador interactivo para la charla «Análisis de Sistemas de Control».
+  Por qué existe: que el público pruebe en el celular los mismos controladores del repo
+  (PID, LQR, MPC, fuzzy y refuerzo) y los equilibre a mano. La página se genera con
+  simulador/build.py, que incrusta core.js y los parámetros de results/.
+-->
+<style>
+  /* Layout: el péndulo arriba (fijo al desplazarse en el celular, columna fija en pantalla
+     ancha) y debajo o al lado el panel del método activo. Paleta de las diapositivas:
+     azul = métodos diseñados, naranja = métodos que aprenden. */
+  :root {
+    --paper: #f6f4ef; --surface: #fffdf8; --sunk: #ece8df; --line: #d9d2c4;
+    --ink: #1d2433; --soft: #555d6e; --faint: #8a8f9c;
+    --blue: #1f5fa8; --blue-weak: rgba(31, 95, 168, 0.13);
+    --orange: #b5481b; --orange-weak: rgba(181, 72, 27, 0.13);
+    --good: #2b7a4b; --bad: #b3261e; --push: #c47a00;
+    --display: "Rubik", "Segoe UI", system-ui, sans-serif;
+    --body: "Nunito Sans", "Segoe UI", system-ui, sans-serif;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #121722; --surface: #1a2030; --sunk: #232a3b; --line: #323b4e;
+      --ink: #ece8df; --soft: #b0b6c3; --faint: #7d8597;
+      --blue: #8fbaf0; --blue-weak: rgba(143, 186, 240, 0.16);
+      --orange: #f2a07b; --orange-weak: rgba(242, 160, 123, 0.16);
+      --good: #6fcf97; --bad: #ff8a80; --push: #f5c04a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #121722; --surface: #1a2030; --sunk: #232a3b; --line: #323b4e;
+    --ink: #ece8df; --soft: #b0b6c3; --faint: #7d8597;
+    --blue: #8fbaf0; --blue-weak: rgba(143, 186, 240, 0.16);
+    --orange: #f2a07b; --orange-weak: rgba(242, 160, 123, 0.16);
+    --good: #6fcf97; --bad: #ff8a80; --push: #f5c04a;
+    color-scheme: dark;
+  }
+  html, body { background: var(--paper); color: var(--ink); }
+  body { font-family: var(--body); font-size: 16px; line-height: 1.5; -webkit-text-size-adjust: 100%; }
+  * { box-sizing: border-box; }
+  h1, h2, h3 { font-family: var(--display); font-weight: 600; line-height: 1.15; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  .app { max-width: 1180px; margin: 0 auto; padding-block: 12px 40px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .top { display: flex; align-items: center; gap: 14px; padding-bottom: 10px; }
+  .logo { width: 124px; height: 27px; flex: none; background: var(--ink);
+    -webkit-mask: var(--logo) center / contain no-repeat; mask: var(--logo) center / contain no-repeat; }
+  .top h1 { font-size: 1.25rem; }
+  .top .sub { color: var(--soft); font-size: 0.875rem; }
+  .top-text { min-width: 0; border-left: 1px solid var(--line); padding-left: 14px; }
+
+  .layout { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+  .panel-col, .stage { min-width: 0; }
+  @media (min-width: 900px) {
+    .layout { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+    .stage-col { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+  }
+  .stage-col { display: grid; gap: 12px; min-width: 0; }
+  @media (max-width: 899px) {
+    .stage-col { display: contents; }
+    .stage-col > .card { order: 3; }
+    .panel-col { order: 2; }
+    .bar .btn { padding: 6px 10px; min-height: 34px; }
+    .stage { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--paper);
+      margin-inline: -4px; padding: 6px 4px 8px; box-shadow: 0 8px 12px -12px rgba(0, 0, 0, 0.35); }
+  }
+  .canvas-wrap { position: relative; width: 100%; aspect-ratio: 2.3 / 1; max-height: 36vh; min-height: 150px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; touch-action: manipulation; }
+  #sim { display: block; width: 100%; height: 100%; }
+  .badge { position: absolute; top: 8px; left: 10px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--soft); pointer-events: none; }
+  .solved { position: absolute; top: 8px; right: 10px; font-size: 0.75rem; font-weight: 700; color: var(--good); pointer-events: none; }
+  .overlay { position: absolute; inset: 0; display: grid; place-content: center; gap: 10px; text-align: center;
+    background: color-mix(in srgb, var(--surface) 82%, transparent); padding: 12px; }
+  .overlay p { font-family: var(--display); font-size: 1.1rem; font-weight: 600; }
+  .overlay .why { font-family: var(--body); font-size: 0.875rem; font-weight: 400; color: var(--soft); }
+
+  .readout { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 6px 2px 0; font-size: 0.8125rem; color: var(--soft);
+    font-variant-numeric: tabular-nums; }
+  .readout b { color: var(--ink); font-weight: 700; }
+  .bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding-top: 8px; }
+  .btn { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 13px;
+    font-weight: 600; font-size: 0.875rem; cursor: pointer; min-height: 38px; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  .btn:hover { border-color: var(--faint); }
+  .btn.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .btn.push { color: var(--push); border-color: color-mix(in srgb, var(--push) 45%, var(--line)); }
+  .btn[aria-pressed="true"] { background: var(--sunk); border-color: var(--faint); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
+  .seg button { border: 0; background: transparent; padding: 7px 11px; font-size: 0.8125rem; font-weight: 600; cursor: pointer; min-height: 36px; color: var(--soft); }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .spacer { flex: 1; }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; min-width: 0; }
+  .chart-head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
+  .label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--soft); }
+  canvas.chart { display: block; width: 100%; height: 150px; margin-top: 6px; }
+  .opts { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 10px; align-items: center; font-size: 0.8125rem; color: var(--soft); }
+  select { font: inherit; font-size: 0.875rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+
+  .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 15px;
+    font-family: var(--display); font-weight: 500; font-size: 0.9375rem; cursor: pointer; color: var(--soft); }
+  .tab[aria-selected="true"] { color: var(--paper); background: var(--blue); border-color: var(--blue); }
+  .tab.rl[aria-selected="true"] { background: var(--orange); border-color: var(--orange); }
+  .tab.you[aria-selected="true"] { background: var(--ink); border-color: var(--ink); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tab[aria-selected="true"] { color: #121722; } }
+  :root[data-theme="dark"] .tab[aria-selected="true"] { color: #121722; }
+
+  .panel { display: grid; gap: 14px; padding-top: 12px; }
+  .panel h2 { font-size: 1.5rem; }
+  .lede { color: var(--soft); max-width: 62ch; }
+  .kicker { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--blue); }
+  .rl-panel .kicker { color: var(--orange); }
+  .group { display: grid; gap: 12px; }
+  .group h3 { font-size: 1rem; }
+  .slider { display: grid; gap: 2px; }
+  .slider .row { display: flex; justify-content: space-between; gap: 10px; font-size: 0.9375rem; }
+  .slider .row span:first-child { font-weight: 600; }
+  .slider output { font-variant-numeric: tabular-nums; color: var(--soft); white-space: nowrap; }
+  .slider small { color: var(--faint); font-size: 0.8125rem; }
+  input[type="range"] { width: 100%; accent-color: var(--blue); height: 28px; margin: 0; }
+  .rl-panel input[type="range"] { accent-color: var(--orange); }
+  .try { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; color: var(--soft); font-size: 0.9375rem; }
+  .try b { color: var(--ink); }
+  .note { font-size: 0.8125rem; color: var(--faint); }
+  .row-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  /* Juega tú */
+  .pads { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pad { border: 1px solid var(--line); background: var(--surface); border-radius: 16px; min-height: 92px; font-family: var(--display);
+    font-size: 1.6rem; font-weight: 600; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  .pad.on { background: var(--ink); color: var(--paper); }
+  .score { display: flex; gap: 18px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+  .score div { display: grid; }
+  .score b { font-family: var(--display); font-size: 1.6rem; font-weight: 600; }
+  .score span { font-size: 0.8125rem; color: var(--soft); }
+
+  /* PID: aporte de cada término */
+  .terms { display: grid; gap: 6px; }
+  .term { display: grid; grid-template-columns: 74px minmax(0, 1fr) 64px; gap: 8px; align-items: center; font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+  .term .track { position: relative; height: 12px; background: var(--sunk); border-radius: 6px; overflow: hidden; }
+  .term .track::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--faint); }
+  .term .fill { position: absolute; top: 0; bottom: 0; background: var(--blue); }
+  .term output { text-align: right; color: var(--soft); }
+
+  .kgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .kgrid div { background: var(--sunk); border-radius: 10px; padding: 8px 10px; display: grid; }
+  .kgrid b { font-family: var(--display); font-weight: 600; font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+  .kgrid span { font-size: 0.8125rem; color: var(--soft); }
+  .warn { color: var(--bad); font-weight: 700; }
+
+  /* Fuzzy */
+  .mf { width: 100%; height: auto; display: block; touch-action: none; }
+  .mf .tri { fill: none; stroke-width: 2; }
+  .mf .handle { cursor: grab; }
+  .mf text { font-size: 10px; fill: var(--soft); font-family: var(--body); }
+  .rules { display: grid; grid-template-columns: 76px repeat(5, minmax(0, 1fr)); gap: 3px; font-size: 0.75rem; }
+  .rules .h { color: var(--soft); text-align: center; align-self: end; line-height: 1.2; padding-bottom: 2px; }
+  .rules .rh { color: var(--soft); text-align: right; padding-right: 4px; align-self: center; line-height: 1.2; }
+  .rules .c { position: relative; border-radius: 6px; background: var(--sunk); text-align: center; padding: 7px 0; font-weight: 700; overflow: hidden; font-variant-numeric: tabular-nums; }
+  .rules .c i { position: absolute; inset: 0; background: var(--blue); opacity: 0; }
+  .rules .c span { position: relative; }
+
+  /* Refuerzo */
+  .sub-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .stat { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.875rem; color: var(--soft); font-variant-numeric: tabular-nums; }
+  .stat b { color: var(--ink); }
+  .pmap { display: grid; grid-template-columns: 64px repeat(6, minmax(0, 1fr)); gap: 3px; font-size: 0.75rem; }
+  .pmap .h { color: var(--soft); text-align: center; line-height: 1.2; }
+  .pmap .rh { color: var(--soft); text-align: right; padding-right: 4px; align-self: center; line-height: 1.2; }
+  .pmap .c { border-radius: 6px; text-align: center; padding: 8px 0; font-weight: 700; background: var(--sunk); color: var(--faint); }
+  .agents { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .agent { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 9px 11px; cursor: pointer; display: grid; gap: 2px; min-width: 0; }
+  .agent b { font-family: var(--display); font-weight: 500; font-size: 0.9375rem; }
+  .agent span { font-size: 0.8125rem; color: var(--soft); }
+  .agent[aria-pressed="true"] { border-color: var(--orange); box-shadow: inset 0 0 0 1px var(--orange); }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8125rem; color: var(--soft); }
+  .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+
+  footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--faint); font-size: 0.8125rem; max-width: 80ch; }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="logo" role="img" aria-label="MegaOmega"></div>
+    <div class="top-text">
+      <h1>Simulador Cart Pole</h1>
+      <p class="sub">El mismo péndulo de la charla, con los controladores y agentes del laboratorio.</p>
+    </div>
+  </header>
+
+  <div class="layout">
+    <section class="stage-col" aria-label="Simulación">
+      <div class="stage">
+        <div class="canvas-wrap" id="canvasWrap">
+          <canvas id="sim" aria-label="Carro con péndulo invertido"></canvas>
+          <div class="badge" id="badge">PID</div>
+          <div class="solved" id="solved" hidden>✓ 10 s</div>
+          <div class="overlay" id="overlay" hidden>
+            <p id="overlayText">Se cayó</p>
+            <p class="why" id="overlayWhy"></p>
+            <div><button class="btn primary" id="overlayBtn" type="button">Otra vez</button></div>
+          </div>
+        </div>
+        <div class="readout" id="readout"></div>
+        <div class="bar">
+          <button class="btn primary" id="btnReset" type="button">↺ Reiniciar</button>
+          <button class="btn push" id="btnPushL" type="button" aria-label="Empujón hacia la izquierda">← Empujón</button>
+          <button class="btn push" id="btnPushR" type="button" aria-label="Empujón hacia la derecha">Empujón →</button>
+          <button class="btn" id="btnPause" type="button" aria-pressed="false">Pausa</button>
+          <span class="spacer"></span>
+          <div class="seg" id="speedSeg" role="group" aria-label="Velocidad">
+            <button type="button" data-speed="0.25">¼×</button><button type="button" data-speed="0.5">½×</button><button type="button" data-speed="1">1×</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="chart-head">
+          <span class="label">Últimos 10 segundos</span>
+          <div class="legend">
+            <span><i style="background: var(--blue)"></i>ángulo</span>
+            <span><i style="background: var(--faint)"></i>posición</span>
+            <span><i style="background: var(--push)"></i>fuerza</span>
+          </div>
+        </div>
+        <canvas class="chart" id="strip" aria-label="Gráfica del ángulo, la posición y la fuerza"></canvas>
+        <div class="opts">
+          <label>Inicio
+            <select id="initSel">
+              <option value="normal">Normal (como el juego oficial)</option>
+              <option value="tilt">Inclinado 8°</option>
+              <option value="edge">Carro cerca del borde</option>
+              <option value="launch">Carro lanzado a 1,5 m/s</option>
+              <option value="fast">Cayendo rápido</option>
+            </select>
+          </label>
+          <label>Empujón
+            <select id="pushSel">
+              <option value="0.5">0,5 N·s (suave)</option>
+              <option value="1" selected>1 N·s</option>
+              <option value="1.5">1,5 N·s</option>
+              <option value="2">2 N·s (fuerte)</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel-col" aria-label="Métodos">
+      <nav class="tabs" role="tablist" id="tabs">
+        <button class="tab you" role="tab" data-tab="tu" type="button">Tú</button>
+        <button class="tab" role="tab" data-tab="pid" type="button">PID</button>
+        <button class="tab" role="tab" data-tab="lqr" type="button">LQR</button>
+        <button class="tab" role="tab" data-tab="mpc" type="button">MPC</button>
+        <button class="tab" role="tab" data-tab="fuzzy" type="button">Fuzzy</button>
+        <button class="tab rl" role="tab" data-tab="rl" type="button">Aprendizaje</button>
+      </nav>
+
+      <!-- Juega tú -->
+      <div class="panel" data-panel="tu" role="tabpanel" hidden>
+        <div class="kicker">Sin controlador</div>
+        <h2>Equilíbralo tú</h2>
+        <p class="lede">Mantén presionado un botón para empujar el carro con 10 N, la misma fuerza máxima que tienen los controladores. CartPole se considera resuelto si aguantas 10 segundos.</p>
+        <div class="pads">
+          <button class="pad" id="padL" type="button" aria-label="Empujar a la izquierda">◀</button>
+          <button class="pad" id="padR" type="button" aria-label="Empujar a la derecha">▶</button>
+        </div>
+        <div class="score">
+          <div><b id="youNow">0,0 s</b><span>este intento</span></div>
+          <div><b id="youBest">0,0 s</b><span>tu mejor tiempo</span></div>
+        </div>
+        <ul class="try">
+          <li>A velocidad real es muy difícil. Empieza en <b>¼×</b> y ve subiendo.</li>
+          <li>En una computadora también puedes usar las flechas <b>← →</b> del teclado.</li>
+          <li>Después abre la pestaña <b>LQR</b>: con la misma fuerza máxima, lo mantiene de pie sin esfuerzo.</li>
+        </ul>
+      </div>
+
+      <!-- PID -->
+      <div class="panel" data-panel="pid" role="tabpanel" hidden>
+        <div class="kicker">Método diseñado · 1 de 4</div>
+        <h2>PID: corrige con tres reglas</h2>
+        <p class="lede">Fuerza = P × cuánto está inclinado + I × cuánto tiempo lleva inclinado + D × qué tan rápido cae. Un segundo lazo, más lento, devuelve el carro al centro pidiendo una pequeña inclinación.</p>
+        <div class="group card">
+          <h3>Lazo del poste</h3>
+          <div id="pidPole"></div>
+          <div class="terms" id="pidTerms"></div>
+        </div>
+        <div class="group card">
+          <h3>Lazo del carro</h3>
+          <div id="pidCart"></div>
+        </div>
+        <div class="row-btns"><button class="btn" id="pidReset" type="button">Valores sintonizados en el laboratorio</button></div>
+        <ul class="try" id="pidTry"></ul>
+      </div>
+
+      <!-- LQR -->
+      <div class="panel" data-panel="lqr" role="tabpanel" hidden>
+        <div class="kicker">Método diseñado · 2 de 4</div>
+        <h2>LQR: el óptimo según las ecuaciones</h2>
+        <p class="lede">No se prueba nada. Tú dices cuánto toleras de cada cosa y las ecuaciones calculan la mejor reacción para cada situación. El LQR no conoce el límite de 10 N del motor.</p>
+        <div class="group card">
+          <h3>Lo que estás dispuesto a tolerar</h3>
+          <div id="lqrSliders"></div>
+        </div>
+        <div class="group card">
+          <h3>Lo que calculó</h3>
+          <div class="kgrid" id="lqrK"></div>
+          <p class="note" id="lqrNow"></p>
+        </div>
+        <div class="row-btns"><button class="btn" id="lqrReset" type="button">Valores del laboratorio (regla de Bryson)</button></div>
+        <ul class="try" id="lqrTry"></ul>
+      </div>
+
+      <!-- MPC -->
+      <div class="panel" data-panel="mpc" role="tabpanel" hidden>
+        <div class="kicker">Método diseñado · 3 de 4</div>
+        <h2>MPC: planifica y respeta límites</h2>
+        <p class="lede">Cada 20 ms calcula el mejor plan para los próximos instantes sin pasarse de los límites, aplica solo el primer empujón y vuelve a planificar. Las siluetas tenues muestran lo que espera que pase.</p>
+        <div class="group card">
+          <h3>Límites y horizonte</h3>
+          <div id="mpcSliders"></div>
+        </div>
+        <div class="group card">
+          <div class="chart-head"><h3>El plan de este instante</h3><span class="note" id="mpcStats"></span></div>
+          <canvas class="chart" id="mpcPlan" aria-label="Plan del MPC"></canvas>
+          <div class="legend">
+            <span><i style="background: var(--push)"></i>fuerza planeada</span>
+            <span><i style="background: var(--blue)"></i>ángulo previsto</span>
+            <span><i style="background: var(--bad)"></i>límite de ángulo</span>
+          </div>
+        </div>
+        <div class="row-btns"><button class="btn" id="mpcReset" type="button">Valores del laboratorio</button></div>
+        <ul class="try" id="mpcTry"></ul>
+      </div>
+
+      <!-- Fuzzy -->
+      <div class="panel" data-panel="fuzzy" role="tabpanel" hidden>
+        <div class="kicker">Método diseñado · 4 de 4</div>
+        <h2>Fuzzy: reglas escritas con palabras</h2>
+        <p class="lede">25 reglas del tipo «si está poco inclinado a la derecha y cae rápido a la derecha, empuja fuerte a la derecha». Cada situación activa varias reglas a la vez y sus consejos se mezclan.</p>
+        <div class="group card">
+          <h3>Qué significa cada palabra</h3>
+          <p class="note">Arrastra los puntos de los triángulos. La línea vertical es el valor de este instante.</p>
+          <div><span class="label">Inclinación</span><svg class="mf" id="mfE" viewBox="0 0 320 112" role="img" aria-label="Funciones de pertenencia de la inclinación"></svg></div>
+          <div><span class="label">Velocidad de giro</span><svg class="mf" id="mfD" viewBox="0 0 320 112" role="img" aria-label="Funciones de pertenencia de la velocidad"></svg></div>
+        </div>
+        <div class="group card">
+          <h3>Las 25 reglas, encendidas en vivo</h3>
+          <div class="rules" id="rules"></div>
+          <p class="note">Filas: inclinación. Columnas: velocidad de giro. Cada casilla dice hacia dónde empujar; el color indica cuánto pesa esa regla ahora.</p>
+        </div>
+        <div class="group card">
+          <h3>Escalas</h3>
+          <div id="fuzzySliders"></div>
+        </div>
+        <div class="row-btns"><button class="btn" id="fuzzyReset" type="button">Valores sintonizados en el laboratorio</button></div>
+        <ul class="try" id="fuzzyTry"></ul>
+      </div>
+
+      <!-- Refuerzo -->
+      <div class="panel rl-panel" data-panel="rl" role="tabpanel" hidden>
+        <div class="kicker">Métodos que aprenden</div>
+        <h2>Aprendizaje por refuerzo: aprende probando</h2>
+        <p class="lede">El agente no conoce la física. Prueba, se cae, gana un punto por cada paso que aguanta y va corrigiendo lo que hace en cada situación.</p>
+        <div class="sub-tabs seg" id="rlMode" role="group" aria-label="Modo">
+          <button type="button" data-mode="train" aria-pressed="true">Entrénalo aquí</button>
+          <button type="button" data-mode="lab" aria-pressed="false">Agentes del laboratorio</button>
+        </div>
+
+        <div class="group" id="rlTrain">
+          <div class="card group">
+            <div class="opts" style="margin-top:0">
+              <label>Algoritmo
+                <select id="rlMethod"><option value="q_learning">Q-learning</option><option value="sarsa">SARSA</option></select>
+              </label>
+              <div class="seg" id="rlSpeed" role="group" aria-label="Ritmo de entrenamiento">
+                <button type="button" data-rate="live" aria-pressed="false">Ver cada intento</button>
+                <button type="button" data-rate="fast" aria-pressed="true">Rápido</button>
+              </div>
+            </div>
+            <div class="row-btns">
+              <button class="btn primary" id="rlRun" type="button">▶ Entrenar</button>
+              <button class="btn" id="rlRestart" type="button">Borrar lo aprendido</button>
+            </div>
+            <div class="stat" id="rlStat"></div>
+            <p class="note" id="rlStageNote"></p>
+          </div>
+          <div class="card">
+            <div class="chart-head"><span class="label">Cuánto aguanta (de 0 a 500 pasos = 10 s)</span></div>
+            <canvas class="chart" id="rlCurve" style="height: 170px" aria-label="Curva de aprendizaje"></canvas>
+            <div class="legend">
+              <span><i style="background: var(--orange)"></i>tu agente (prueba sin explorar)</span>
+              <span><i style="background: var(--faint)"></i>intentos de práctica</span>
+              <span><i style="background: var(--sunk); height: 8px"></i>10 agentes del laboratorio</span>
+            </div>
+          </div>
+          <div class="card group">
+            <h3>Lo que aprendió en cada situación</h3>
+            <div class="pmap" id="pmap"></div>
+            <p class="note">Con el carro centrado y quieto. Cada casilla es una de las 162 situaciones de su tabla; la flecha es el empujón que hoy cree mejor. «?» = situación que todavía no visitó.</p>
+          </div>
+        </div>
+
+        <div class="group" id="rlLab" hidden>
+          <div class="agents" id="agents"></div>
+          <div class="card group">
+            <p id="agentInfo" class="lede"></p>
+            <canvas class="chart" id="agentCurve" style="height: 160px" aria-label="Curva de entrenamiento del agente"></canvas>
+            <div class="legend">
+              <span><i style="background: var(--orange)"></i>retorno en validación durante el entrenamiento</span>
+              <span><i style="background: var(--ink)"></i>red o tabla que estás viendo</span>
+            </div>
+          </div>
+          <ul class="try">
+            <li>Compara <b>DQN · mejor red</b> con <b>DQN · red final</b>: siguió entrenando y se le olvidó lo aprendido.</li>
+            <li>Empuja al <b>Actor-crítico</b> y al <b>Q-learning</b>: fíjate en cuánta fuerza usa cada uno.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    Física de CartPole-v1 (Gymnasium): carro de 1 kg, poste de 0,1 kg y 1 m, motor de ±10 N, un control cada 20 ms. El poste cae si pasa de 12° y el carro se sale si pasa de 2,4 m. Ganancias, tablas y redes tomadas tal cual de la carpeta results/ del repositorio EL_DEScOnTrOl.
+  </footer>
+</div>
+
+<script>/*__CORE__*/</script>
+<script>
+/*__DATA__*/
+// Interfaz del simulador. Por qué está escrita así: una sola simulación compartida (la
+// misma física para todos) a la que cada pestaña conecta su controlador; los cambios de
+// parámetros se aplican en caliente para que se vea su efecto sin reiniciar.
+(() => {
+  "use strict";
+  const C = Core, TAU = C.P.tau, DEG = 180 / Math.PI;
+  const $ = (id) => document.getElementById(id);
+  const fmt = (v, d = 1) => { const s = (Math.abs(v) < 0.5 * 10 ** -d ? 0 : v).toFixed(d); return s.replace(".", ","); };
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sin almacenamiento */ } } };
+  document.documentElement.style.setProperty("--logo", `url("${DATA.logo}")`);
+
+  // ------------------------------------------------------------------ colores del tema (para canvas)
+  let col = {};
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    for (const k of ["paper", "surface", "sunk", "line", "ink", "soft", "faint", "blue", "orange", "good", "bad", "push"]) col[k] = cs.getPropertyValue(`--${k}`).trim();
+  }
+  readColors();
+  const themeChanged = () => { readColors(); tabs[current]?.redraw?.(); };
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", themeChanged);
+  new MutationObserver(themeChanged).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  // ------------------------------------------------------------------ simulación compartida
+  const HIST = 500; // 10 s
+  const sim = { s: [0, 0, 0, 0], t: 0, steps: 0, failed: null, paused: false, speed: 1, impulse: 0, impulseFlash: 0,
+    force: 0, hist: { th: new Float32Array(HIST), x: new Float32Array(HIST), f: new Float32Array(HIST), n: 0, i: 0 }, ctrl: null, info: null };
+  const INITS = {
+    normal: () => C.initialState(Math.random),
+    tilt: () => [0, 0, (Math.random() < 0.5 ? -1 : 1) * 8 / DEG, 0],
+    edge: () => [1.9, 0, 0.02, 0],
+    fast: () => [0, 0, 0.05, (Math.random() < 0.5 ? -1 : 1) * 1.2],
+    launch: () => [0, (Math.random() < 0.5 ? -1 : 1) * 1.5, 0, 0],
+  };
+  function resetSim() {
+    sim.s = INITS[$("initSel").value]();
+    sim.t = 0; sim.steps = 0; sim.failed = null; sim.impulse = 0; sim.force = 0; sim.info = null;
+    sim.hist.n = 0; sim.hist.i = 0;
+    if (sim.ctrl) sim.ctrl.reset();
+    $("overlay").hidden = true; $("solved").hidden = true;
+    tabs[current].onReset?.();
+  }
+  function push(dir) {
+    if (sim.failed) return;
+    sim.impulse = dir * parseFloat($("pushSel").value);
+    sim.lastPushDir = dir;
+    sim.impulseFlash = 0.35;
+  }
+  function simStep() {
+    let f = 0, info = null;
+    if (sim.ctrl) { const out = sim.ctrl.act(sim.s); f = C.clip(out.force, -C.P.forceMag, C.P.forceMag); info = out.info; }
+    // El empujón es una fuerza externa durante un paso (J / Δt), como en el protocolo del repo.
+    const ext = sim.impulse / TAU;
+    sim.impulse = 0;
+    sim.s = C.step(sim.s, f + ext);
+    sim.force = f; sim.info = info; sim.t += TAU; sim.steps++;
+    const h = sim.hist; h.th[h.i] = sim.s[2] * DEG; h.x[h.i] = sim.s[0]; h.f[h.i] = f; h.i = (h.i + 1) % HIST; h.n = Math.min(HIST, h.n + 1);
+    const why = C.failure(sim.s);
+    if (why) fail(why);
+  }
+  function fail(why) {
+    sim.failed = why;
+    const t = fmt(sim.t, 1);
+    const msg = { poste: `El poste se cayó a los ${t} s`, carro: `El carro se salió del riel a los ${t} s`, ambos: `Se cayó y se salió a los ${t} s` }[why];
+    tabs[current].onFail?.(why, msg);
+    if (!tabs[current].silentFail) { $("overlayText").textContent = msg; $("overlayWhy").textContent = tabs[current].failHint?.(why) ?? ""; $("overlay").hidden = false; }
+  }
+  $("overlayBtn").addEventListener("click", resetSim);
+  $("btnReset").addEventListener("click", resetSim);
+  $("btnPushL").addEventListener("click", () => push(-1));
+  $("btnPushR").addEventListener("click", () => push(1));
+  $("btnPause").addEventListener("click", () => { sim.paused = !sim.paused; $("btnPause").setAttribute("aria-pressed", String(sim.paused)); $("btnPause").textContent = sim.paused ? "Seguir" : "Pausa"; });
+  function setSpeed(v) { sim.speed = v; for (const b of $("speedSeg").children) b.setAttribute("aria-pressed", String(parseFloat(b.dataset.speed) === v)); }
+  $("speedSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { setSpeed(parseFloat(b.dataset.speed)); tabs[current].speed = sim.speed; } });
+  $("initSel").addEventListener("change", resetSim);
+  // Tocar la mitad izquierda o derecha del dibujo también empuja (salvo en «Tú», que usa los botones).
+  $("canvasWrap").addEventListener("pointerdown", (e) => {
+    if (current === "tu" || e.target.closest("button")) return;
+    const r = $("canvasWrap").getBoundingClientRect();
+    push(e.clientX - r.left < r.width / 2 ? -1 : 1);
+  });
+
+  // ------------------------------------------------------------------ dibujo del carro-péndulo
+  const simCanvas = $("sim"), sctx = simCanvas.getContext("2d");
+  function fitCanvas(cv) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5), w = Math.max(1, Math.round(cv.clientWidth * dpr)), h = Math.max(1, Math.round(cv.clientHeight * dpr));
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    return dpr;
+  }
+  function drawSim() {
+    const dpr = fitCanvas(simCanvas), W = simCanvas.width, H = simCanvas.height, g = sctx;
+    g.clearRect(0, 0, W, H);
+    const sc = Math.min(W / 5.6, (0.8 * H) / 1.42), ground = H * 0.84, X = (x) => W / 2 + x * sc;
+    const lw = Math.max(1, dpr);
+    // riel y topes
+    g.strokeStyle = col.line; g.lineWidth = 2 * lw; g.beginPath(); g.moveTo(X(-2.4), ground); g.lineTo(X(2.4), ground); g.stroke();
+    g.fillStyle = col.faint; g.font = `${11 * dpr}px ${getComputedStyle(document.body).fontFamily}`; g.textAlign = "center";
+    for (let m = -2; m <= 2; m++) { g.fillRect(X(m) - lw / 2, ground + 3 * lw, lw, 5 * lw); g.fillText(`${m}`, X(m), ground + 18 * dpr); }
+    g.fillStyle = col.bad; for (const e of [-2.4, 2.4]) g.fillRect(X(e) - 1.5 * lw, ground - 22 * lw, 3 * lw, 22 * lw);
+    tabs[current].drawBehind?.(g, { X, sc, ground, lw, dpr });
+    // carro y poste
+    const [x, , th] = sim.s, cw = 0.5 * sc, ch = 0.22 * sc, top = ground - 0.05 * sc - ch, px = X(x);
+    drawCart(g, px, th, { cw, ch, top, sc, lw, ground, alpha: 1 });
+    // fuerza del controlador
+    const tabColor = tabs[current].color();
+    if (Math.abs(sim.force) > 0.05 && !sim.failed) arrow(g, px + Math.sign(sim.force) * (cw / 2 + 4 * lw), top + ch / 2, Math.sign(sim.force), (Math.abs(sim.force) / 10) * 0.75 * sc, tabColor, 4 * lw);
+    if (sim.impulseFlash > 0) { const d = Math.sign(sim.lastPushDir || 1); arrow(g, px - d * (cw / 2 + 0.75 * sc + 10 * lw), top + ch * 0.2, d, 0.6 * sc, col.push, 6 * lw); }
+  }
+  function drawCart(g, px, th, o) {
+    g.globalAlpha = o.alpha;
+    g.fillStyle = col.ink; roundRect(g, px - o.cw / 2, o.top, o.cw, o.ch, 4 * o.lw); g.fill();
+    g.fillStyle = col.surface; for (const k of [-0.28, 0.28]) { g.beginPath(); g.arc(px + k * o.cw, o.ground - 0.045 * o.sc, 0.045 * o.sc, 0, 7); g.fill(); g.strokeStyle = col.ink; g.lineWidth = 2 * o.lw; g.stroke(); }
+    const L = 1.0 * o.sc, tx = px + Math.sin(th) * L, ty = o.top - Math.cos(th) * L;
+    g.strokeStyle = sim.failed && o.alpha === 1 ? col.bad : col.ink;
+    g.lineCap = "round"; g.lineWidth = Math.max(5 * o.lw, 0.05 * o.sc); g.beginPath(); g.moveTo(px, o.top); g.lineTo(tx, ty); g.stroke();
+    g.fillStyle = col.surface; g.beginPath(); g.arc(px, o.top, 0.03 * o.sc + 2 * o.lw, 0, 7); g.fill(); g.strokeStyle = col.ink; g.lineWidth = 2 * o.lw; g.stroke();
+    g.globalAlpha = 1;
+  }
+  function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function arrow(g, x0, y, dir, len, color, w) {
+    if (len < 2) return;
+    const x1 = x0 + dir * len, head = Math.min(len * 0.5, w * 2.6);
+    g.strokeStyle = color; g.fillStyle = color; g.lineWidth = w; g.lineCap = "round";
+    g.beginPath(); g.moveTo(x0, y); g.lineTo(x1 - dir * head * 0.6, y); g.stroke();
+    g.beginPath(); g.moveTo(x1, y); g.lineTo(x1 - dir * head, y - head * 0.7); g.lineTo(x1 - dir * head, y + head * 0.7); g.closePath(); g.fill();
+  }
+
+  // ------------------------------------------------------------------ gráfica de los últimos 10 s
+  const strip = $("strip"), stx = strip.getContext("2d");
+  function drawStrip() {
+    const dpr = fitCanvas(strip), W = strip.width, H = strip.height, g = stx, h = sim.hist;
+    g.clearRect(0, 0, W, H);
+    const left = 34 * dpr, lanes = [["ángulo °", h.th, 15, 12, col.blue], ["posición m", h.x, 2.8, 2.4, col.faint], ["fuerza N", h.f, 12, 10, col.push]];
+    const lh = H / 3;
+    g.font = `${10 * dpr}px ${getComputedStyle(document.body).fontFamily}`;
+    lanes.forEach(([name, arr, range, lim, color], k) => {
+      const mid = lh * k + lh / 2, Y = (v) => mid - (v / range) * (lh / 2 - 3 * dpr);
+      g.strokeStyle = col.line; g.lineWidth = dpr; g.setLineDash([]);
+      g.beginPath(); g.moveTo(left, mid); g.lineTo(W, mid); g.stroke();
+      g.setLineDash([3 * dpr, 4 * dpr]); g.strokeStyle = col.bad; g.globalAlpha = 0.5;
+      for (const s of [-1, 1]) { g.beginPath(); g.moveTo(left, Y(s * lim)); g.lineTo(W, Y(s * lim)); g.stroke(); }
+      g.globalAlpha = 1; g.setLineDash([]);
+      g.fillStyle = col.soft; g.textAlign = "left"; g.fillText(name.split(" ")[0], 2, mid - 2 * dpr); g.fillStyle = col.faint; g.fillText(`±${lim}`, 2, mid + 10 * dpr);
+      if (h.n < 2) return;
+      g.strokeStyle = color; g.lineWidth = 1.6 * dpr; g.beginPath();
+      for (let j = 0; j < h.n; j++) {
+        const idx = (h.i - h.n + j + HIST) % HIST, xx = left + ((HIST - h.n + j) / (HIST - 1)) * (W - left);
+        const v = Math.max(-range, Math.min(range, arr[idx]));
+        j ? g.lineTo(xx, Y(v)) : g.moveTo(xx, Y(v));
+      }
+      g.stroke();
+    });
+  }
+  function readout() {
+    const [x, , th] = sim.s;
+    $("readout").innerHTML = `<span>t <b>${fmt(sim.t, 1)} s</b></span><span>ángulo <b>${fmt(th * DEG, 1)}°</b></span><span>posición <b>${fmt(x, 2)} m</b></span><span>fuerza <b>${fmt(sim.force, 1)} N</b></span>`;
+    $("solved").hidden = !(sim.t >= 10 - 1e-9 && !sim.failed);
+  }
+
+  // ------------------------------------------------------------------ deslizadores
+  function slider(host, o) {
+    const wrap = document.createElement("div"); wrap.className = "slider";
+    const id = `sl-${o.id}`;
+    wrap.innerHTML = `<label class="row" for="${id}"><span>${o.label}</span><output></output></label><input type="range" id="${id}" min="0" max="1000" step="1">${o.hint ? `<small>${o.hint}</small>` : ""}`;
+    host.appendChild(wrap);
+    const input = wrap.querySelector("input"), out = wrap.querySelector("output");
+    const toPos = (v) => o.log ? (1000 * Math.log(v / o.min)) / Math.log(o.max / o.min) : (1000 * (v - o.min)) / (o.max - o.min);
+    const toVal = (p) => { const v = o.log ? o.min * (o.max / o.min) ** (p / 1000) : o.min + ((o.max - o.min) * p) / 1000; return o.step ? Math.round(v / o.step) * o.step : v; };
+    const api = {
+      set(v, silent) { input.value = String(Math.round(toPos(v))); out.textContent = o.fmt(v); if (!silent) o.onInput(v); },
+      get: () => toVal(parseFloat(input.value)),
+    };
+    input.addEventListener("input", () => { const v = toVal(parseFloat(input.value)); out.textContent = o.fmt(v); o.onInput(v); });
+    api.set(o.value, true);
+    return api;
+  }
+  const tryList = (id, items) => { $(id).innerHTML = items.map((t) => `<li>${t}</li>`).join(""); };
+
+  // ------------------------------------------------------------------ pestañas
+  const tabs = {};
+  let current = null;
+
+  // Tú
+  {
+    const keys = { l: false, r: false };
+    const human = { reset() {}, act() { return { force: (keys.r ? 10 : 0) - (keys.l ? 10 : 0), info: null }; } };
+    let best = store.get("cp-best", 0);
+    const show = () => { $("youNow").textContent = `${fmt(sim.t, 1)} s`; $("youBest").textContent = `${fmt(best, 1)} s`; };
+    const bindPad = (el, k) => {
+      const on = (e) => { e.preventDefault(); keys[k] = true; el.classList.add("on"); try { el.setPointerCapture(e.pointerId); } catch { /* sin captura */ } };
+      const off = () => { keys[k] = false; el.classList.remove("on"); };
+      el.addEventListener("pointerdown", on); el.addEventListener("pointerup", off); el.addEventListener("pointercancel", off); el.addEventListener("lostpointercapture", off);
+      el.addEventListener("contextmenu", (e) => e.preventDefault());
+    };
+    bindPad($("padL"), "l"); bindPad($("padR"), "r");
+    window.addEventListener("keydown", (e) => { if (current !== "tu") return; if (e.key === "ArrowLeft") { keys.l = true; e.preventDefault(); } if (e.key === "ArrowRight") { keys.r = true; e.preventDefault(); } });
+    window.addEventListener("keyup", (e) => { if (e.key === "ArrowLeft") keys.l = false; if (e.key === "ArrowRight") keys.r = false; });
+    tabs.tu = { name: "Tú", speed: 0.25, color: () => col.ink, controller: () => human, frame: show,
+      onFail() { if (sim.t > best) { best = sim.t; store.set("cp-best", best); } show(); },
+      failHint: () => (best >= 10 ? "Ya lo resolviste. Prueba a 1×." : "Prueba a una velocidad más lenta."), onReset: show };
+  }
+
+  // PID
+  {
+    const g = Object.assign({}, DATA.pid), ctrl = C.makePID(g), sl = {};
+    const defs = [
+      ["pidPole", "kp_theta", "P · inclinación", 0, 250, (v) => `${fmt(v, 0)} N/rad`, "Cuánto empuja por cada radián de inclinación."],
+      ["pidPole", "ki_theta", "I · inclinación acumulada", 0, 200, (v) => `${fmt(v, 1)}`, "En el laboratorio salió casi 0: aquí no hace falta."],
+      ["pidPole", "kd_theta", "D · velocidad de caída", 0, 50, (v) => `${fmt(v, 1)} N·s/rad`, "Frena el giro antes de que se pase."],
+      ["pidCart", "kp_x", "P · distancia al centro", 0, 0.5, (v) => fmt(v, 3), "Cuánta inclinación pide para volver al centro."],
+      ["pidCart", "kd_x", "D · velocidad del carro", 0, 0.5, (v) => fmt(v, 3), "Frena el carro para que no se pase del centro."],
+    ];
+    for (const [host, key, label, min, max, f, hint] of defs) sl[key] = slider($(host), { id: key, label, min, max, value: g[key], fmt: f, hint, onInput: (v) => { g[key] = v; } });
+    $("pidTerms").innerHTML = ["P", "I", "D"].map((t) => `<div class="term"><span>aporte ${t}</span><div class="track"><div class="fill" id="term${t}"></div></div><output id="termV${t}">0 N</output></div>`).join("");
+    $("pidReset").addEventListener("click", () => { for (const k in sl) sl[k].set(DATA.pid[k]); resetSim(); });
+    tryList("pidTry", [
+      "Baja <b>D</b> a 0: sin nadie que frene el giro, el poste cae en menos de un segundo.",
+      "Pon los dos del <b>carro</b> en 0: el poste sigue de pie, pero nadie devuelve el carro al centro y puede terminar saliéndose del riel.",
+      "Elige un empujón de <b>2 N·s</b>: ni el PID sintonizado lo aguanta.",
+      "Elige el inicio <b>Carro lanzado</b>: lo salva, pero queda a centímetros del borde.",
+    ]);
+    tabs.pid = { name: "PID", speed: 1, color: () => col.blue, controller: () => ctrl,
+      frame() {
+        const terms = sim.info?.terms ?? [0, 0, 0];
+        terms.forEach((v, i) => { const t = "PID"[i], w = Math.min(50, (Math.abs(v) / 20) * 50); const el = $(`term${t}`); el.style.left = v >= 0 ? "50%" : `${50 - w}%`; el.style.width = `${w}%`; $(`termV${t}`).textContent = `${fmt(v, 1)} N`; });
+      } };
+  }
+
+  // LQR
+  {
+    const def = { xMax: 0.5 * C.P.xThreshold, thMax: Math.acos(0.99), fMax: C.P.forceMag }; // regla de Bryson del repo
+    const w = Object.assign({}, def), K = new Float64Array(4), ctrl = C.makeLQR(K), sl = {};
+    const recompute = () => { const b = C.brysonWeights(w.xMax, w.thMax, w.fMax); K.set(C.dlqr(b.q, b.r).K); showK(); };
+    const showK = () => {
+      $("lqrK").innerHTML = [
+        [fmt(-K[2] / DEG, 2), "N por cada grado de inclinación"], [fmt(-K[3] / DEG, 2), "N por cada °/s de giro"],
+        [fmt(-K[0] / 10, 2), "N por cada 10 cm de desplazamiento"], [fmt(-K[1] / 10, 2), "N por cada 10 cm/s del carro"],
+      ].map(([v, t]) => `<div><b>${v}</b><span>${t}</span></div>`).join("");
+    };
+    sl.xMax = slider($("lqrSliders"), { id: "lqr-x", label: "Desvío tolerable del carro", min: 0.05, max: 2.4, log: true, value: w.xMax, fmt: (v) => `${fmt(v, 2)} m`, onInput: (v) => { w.xMax = v; recompute(); } });
+    sl.thMax = slider($("lqrSliders"), { id: "lqr-th", label: "Inclinación tolerable", min: 0.5 / DEG, max: 12 / DEG, log: true, value: w.thMax, fmt: (v) => `${fmt(v * DEG, 1)}°`, onInput: (v) => { w.thMax = v; recompute(); } });
+    sl.fMax = slider($("lqrSliders"), { id: "lqr-f", label: "Fuerza que estás dispuesto a usar", min: 0.5, max: 200, log: true, value: w.fMax, fmt: (v) => `${fmt(v, v < 10 ? 1 : 0)} N`, onInput: (v) => { w.fMax = v; recompute(); } });
+    recompute();
+    $("lqrReset").addEventListener("click", () => { for (const k in sl) sl[k].set(def[k]); resetSim(); });
+    tryList("lqrTry", [
+      "Elige el inicio <b>Carro lanzado</b>: el LQR pide mucho más de 10 N, el motor no se los da y el poste se cae.",
+      "Baja la <b>fuerza</b> a 1 N y empuja: nunca satura, pero tarda más del doble en volver al centro.",
+      "Súbela a 100 N y empuja: reacciona más fuerte y choca más seguido con el límite del motor.",
+    ]);
+    tabs.lqr = { name: "LQR", speed: 1, color: () => col.blue, controller: () => ctrl,
+      frame() {
+        const raw = sim.info?.raw ?? 0;
+        $("lqrNow").innerHTML = Math.abs(raw) > C.P.forceMag + 1e-9
+          ? `<span class="warn">Pide ${fmt(raw, 1)} N, pero el motor solo da ±10 N.</span> El LQR no lo sabe.`
+          : `Ahora pide ${fmt(raw, 1)} N (el motor da hasta ±10 N).`;
+      } };
+  }
+
+  // MPC
+  {
+    const def = { horizon: DATA.mpc.horizon, xLimit: DATA.mpc.xLimit, thetaLimit: DATA.mpc.thetaLimit, forceLimit: C.P.forceMag };
+    const o = Object.assign({}, def), b = C.brysonWeights(0.5 * C.P.xThreshold, Math.acos(0.99), C.P.forceMag), sl = {};
+    let mpc = null, rebuildTimer = 0, lastMs = 0, lastIt = 0;
+    const build = () => { mpc = C.makeMPC({ horizon: o.horizon, q: b.q, r: b.r, forceLimit: o.forceLimit, xLimit: o.xLimit, thetaLimit: o.thetaLimit, slackWeight: DATA.mpc.slackWeight }); };
+    const rebuild = () => { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(build, 60); };
+    build();
+    // Envoltura: mide el tiempo de cálculo real en este dispositivo.
+    const ctrl = { reset() {}, act(s) { const t0 = performance.now(); const out = mpc.act(s); lastMs = performance.now() - t0; lastIt = out.info.iters; return out; } };
+    sl.horizon = slider($("mpcSliders"), { id: "mpc-n", label: "Cuánto mira hacia adelante", min: 3, max: 40, step: 1, value: o.horizon, fmt: (v) => `${v} pasos = ${fmt(v * TAU, 2)} s`, onInput: (v) => { o.horizon = v; rebuild(); } });
+    sl.xLimit = slider($("mpcSliders"), { id: "mpc-x", label: "Límite del carro", min: 0.5, max: 2.4, value: o.xLimit, fmt: (v) => `±${fmt(v, 2)} m`, hint: "Las líneas punteadas en el riel.", onInput: (v) => { o.xLimit = v; rebuild(); } });
+    sl.thetaLimit = slider($("mpcSliders"), { id: "mpc-th", label: "Límite de inclinación", min: 2 / DEG, max: 12 / DEG, value: o.thetaLimit, fmt: (v) => `±${fmt(v * DEG, 1)}°`, onInput: (v) => { o.thetaLimit = v; rebuild(); } });
+    sl.forceLimit = slider($("mpcSliders"), { id: "mpc-f", label: "Fuerza máxima que puede planear", min: 1, max: 10, value: o.forceLimit, fmt: (v) => `±${fmt(v, 1)} N`, hint: "Como si el motor fuera más débil.", onInput: (v) => { o.forceLimit = v; rebuild(); } });
+    $("mpcReset").addEventListener("click", () => { for (const k in sl) sl[k].set(def[k]); resetSim(); });
+    tryList("mpcTry", [
+      "Elige el inicio <b>Carro lanzado</b>: el MPC sabe que el motor solo da 10 N y salva el poste. El LQR, no.",
+      "Con <b>Carro lanzado</b>, pon el límite del carro en 1 m: con 25 pasos no le alcanza la anticipación y se rinde. Súbelo a 40 pasos y frena casi en la línea.",
+      "Mientras no toca ningún límite hace exactamente lo mismo que el LQR: compáralos con el mismo empujón de 1 N·s.",
+      "Baja la <b>fuerza máxima</b> a 3 N: sigue equilibrando sin pedir lo que no tiene, pero un empujón de 1 N·s ya lo tumba.",
+    ]);
+    const planCv = $("mpcPlan"), pctx = planCv.getContext("2d");
+    const drawPlan = () => {
+      const dpr = fitCanvas(planCv), W = planCv.width, H = planCv.height, g = pctx, info = sim.info;
+      g.clearRect(0, 0, W, H);
+      if (!info?.forces) return;
+      const n = info.forces.length, bw = W / n, mid = H * 0.5, fs = (H * 0.42) / 10, ts = (H * 0.42) / (12 / DEG);
+      g.strokeStyle = col.line; g.lineWidth = dpr; g.beginPath(); g.moveTo(0, mid); g.lineTo(W, mid); g.stroke();
+      g.fillStyle = col.push; g.globalAlpha = 0.55;
+      info.forces.forEach((f, i) => { const h = f * fs; g.fillRect(i * bw + bw * 0.15, Math.min(mid, mid - h), bw * 0.7, Math.abs(h)); });
+      g.globalAlpha = 1; g.setLineDash([4 * dpr, 4 * dpr]); g.strokeStyle = col.bad;
+      for (const s of [-1, 1]) { g.beginPath(); g.moveTo(0, mid - s * o.thetaLimit * ts); g.lineTo(W, mid - s * o.thetaLimit * ts); g.stroke(); }
+      g.setLineDash([]); g.strokeStyle = col.blue; g.lineWidth = 2 * dpr; g.beginPath();
+      info.plan.forEach((s, i) => { const xx = i * bw, yy = mid - s[2] * ts; i ? g.lineTo(xx, yy) : g.moveTo(xx, yy); }); g.stroke();
+    };
+    tabs.mpc = { name: "MPC", speed: 1, color: () => col.blue, controller: () => ctrl,
+      drawBehind(g, v) {
+        g.setLineDash([5 * v.lw, 5 * v.lw]); g.strokeStyle = col.bad; g.lineWidth = 1.5 * v.lw; g.globalAlpha = 0.8;
+        for (const s of [-1, 1]) { g.beginPath(); g.moveTo(v.X(s * o.xLimit), v.ground - 0.9 * v.sc); g.lineTo(v.X(s * o.xLimit), v.ground); g.stroke(); }
+        g.setLineDash([]); g.globalAlpha = 1;
+        const plan = sim.info?.plan;
+        if (!plan || sim.failed) return;
+        const cw = 0.5 * v.sc, ch = 0.22 * v.sc, top = v.ground - 0.05 * v.sc - ch, every = Math.max(1, Math.round(plan.length / 5));
+        for (let i = plan.length - 1; i >= every; i -= every) drawCart(g, v.X(plan[i][0]), plan[i][2], { cw, ch, top, sc: v.sc, lw: v.lw, ground: v.ground, alpha: 0.1 + 0.25 * (1 - i / plan.length) });
+      },
+      frame() { $("mpcStats").textContent = `cálculo ${fmt(lastMs, 1)} ms · ${lastIt} iteraciones`; drawPlan(); } };
+  }
+
+  // Fuzzy
+  {
+    const g = Object.assign({}, DATA.fuzzy), centers = { e: [-1, -0.5, 0, 0.5, 1], d: [-1, -0.5, 0, 0.5, 1] }, ctrl = C.makeFuzzy(g, centers), sl = {};
+    const ROW = ["mucho ←", "poco ←", "recto", "poco →", "mucho →"], COLS = ["rápido ←", "lento ←", "quieto", "lento →", "rápido →"];
+    const glyph = (r) => ({ "-1": "←←", "-0.5": "←", 0: "·", 0.5: "→", 1: "→→" })[r];
+    $("rules").innerHTML = `<div></div>${COLS.map((c) => `<div class="h">${c}</div>`).join("")}` +
+      C.RULES.map((row, i) => `<div class="rh">${ROW[i]}</div>${row.map((r, j) => `<div class="c"><i id="rc${i}${j}"></i><span>${glyph(r)}</span></div>`).join("")}`).join("");
+    const mfs = {};
+    function mfEditor(svg, key, words) {
+      const W = 320, H = 112, x0 = 14, x1 = 306, yT = 16, yB = 86, X = (z) => x0 + ((z + 1) / 2) * (x1 - x0), Z = (px) => ((px - x0) / (x1 - x0)) * 2 - 1;
+      const ns = "http://www.w3.org/2000/svg", el = (n, a) => { const e = document.createElementNS(ns, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
+      svg.innerHTML = "";
+      svg.appendChild(el("line", { x1: x0, y1: yB, x2: x1, y2: yB, stroke: "var(--line)", "stroke-width": 1.5 }));
+      const tris = [0, 1, 2, 3, 4].map(() => svg.appendChild(el("polyline", { class: "tri", stroke: "var(--blue)", opacity: 0.85 })));
+      const labels = words.map((w) => { const t = svg.appendChild(el("text", { "text-anchor": "middle", y: 104 })); t.textContent = w; return t; });
+      const marker = svg.appendChild(el("line", { y1: yT - 6, y2: yB, stroke: "var(--push)", "stroke-width": 2 }));
+      const dots = [0, 1, 2, 3, 4].map(() => svg.appendChild(el("circle", { r: 3.5, fill: "var(--push)" })));
+      const handles = [1, 2, 3].map((i) => { const h = svg.appendChild(el("circle", { r: 9, class: "handle", fill: "var(--surface)", stroke: "var(--blue)", "stroke-width": 2.5, tabindex: 0, "aria-label": `Mover ${words[i]}` })); h.dataset.i = i; return h; });
+      const c = centers[key];
+      const layout = () => {
+        tris.forEach((p, i) => {
+          const pts = [];
+          if (i === 0) pts.push([X(-1), yT]); else pts.push([X(c[i - 1]), yB]);
+          pts.push([X(c[i]), yT]);
+          if (i === 4) pts.push([X(1), yT]); else pts.push([X(c[i + 1]), yB]);
+          p.setAttribute("points", pts.map((q) => q.join(",")).join(" "));
+        });
+        labels.forEach((t, i) => t.setAttribute("x", X(Math.max(-0.93, Math.min(0.93, c[i])))));
+        handles.forEach((h) => { h.setAttribute("cx", X(c[+h.dataset.i])); h.setAttribute("cy", yT); });
+      };
+      let drag = null;
+      const move = (e) => { if (drag === null) return; const r = svg.getBoundingClientRect(), z = Z(((e.clientX - r.left) / r.width) * W); c[drag] = Math.max(c[drag - 1] + 0.05, Math.min(c[drag + 1] - 0.05, z)); layout(); };
+      svg.addEventListener("pointerdown", (e) => { const h = e.target.closest(".handle"); if (!h) return; drag = +h.dataset.i; svg.setPointerCapture(e.pointerId); e.preventDefault(); });
+      svg.addEventListener("pointermove", move);
+      const up = () => { drag = null; };
+      svg.addEventListener("pointerup", up); svg.addEventListener("pointercancel", up);
+      svg.addEventListener("keydown", (e) => { const h = e.target.closest(".handle"); if (!h || !["ArrowLeft", "ArrowRight"].includes(e.key)) return; const i = +h.dataset.i; c[i] = Math.max(c[i - 1] + 0.05, Math.min(c[i + 1] - 0.05, c[i] + (e.key === "ArrowLeft" ? -0.05 : 0.05))); layout(); e.preventDefault(); });
+      layout();
+      return { layout, show(z, mu) { const zz = Math.max(-1, Math.min(1, z)); marker.setAttribute("x1", X(zz)); marker.setAttribute("x2", X(zz)); dots.forEach((d, i) => { d.setAttribute("cx", X(zz)); d.setAttribute("cy", yB - mu[i] * (yB - yT)); d.setAttribute("opacity", mu[i] > 0.001 ? 1 : 0); }); } };
+    }
+    mfs.e = mfEditor($("mfE"), "e", ["mucho ←", "poco ←", "recto", "poco →", "mucho →"]);
+    mfs.d = mfEditor($("mfD"), "d", ["rápido ←", "lento ←", "quieto", "lento →", "rápido →"]);
+    const defs = [
+      ["theta_scale", "Qué es «mucha» inclinación", 0.5 / DEG, 12 / DEG, (v) => `${fmt(v * DEG, 1)}°`],
+      ["theta_dot_scale", "Qué es girar «rápido»", 0.05, 3, (v) => `${fmt(v * DEG, 0)} °/s`],
+      ["force_scale", "Qué es empujar «fuerte»", 0.5, 10, (v) => `${fmt(v, 1)} N`],
+      ["kp_x", "Lazo del carro · distancia", 0, 0.5, (v) => fmt(v, 3)],
+      ["kd_x", "Lazo del carro · velocidad", 0, 0.5, (v) => fmt(v, 3)],
+    ];
+    for (const [key, label, min, max, f] of defs) sl[key] = slider($("fuzzySliders"), { id: key, label, min, max, value: g[key], fmt: f, onInput: (v) => { g[key] = v; } });
+    $("fuzzyReset").addEventListener("click", () => { for (const k in sl) sl[k].set(DATA.fuzzy[k]); for (const k of ["e", "d"]) { centers[k].splice(0, 5, -1, -0.5, 0, 0.5, 1); mfs[k].layout(); } resetSim(); });
+    tryList("fuzzyTry", [
+      "Junta los triángulos de <b>inclinación</b> hacia el centro: «poco inclinado» empieza antes.",
+      "Baja «empujar <b>fuerte</b>» a 2 N: aguanta de pie, pero un empujón de 1 N·s lo tumba. Las reglas son las mismas; el músculo no alcanza.",
+      "Mira la tabla: cada valor pertenece como mucho a dos palabras, así que nunca se encienden más de 4 reglas a la vez.",
+    ]);
+    tabs.fuzzy = { name: "Fuzzy", speed: 1, color: () => col.blue, controller: () => ctrl,
+      frame() {
+        const inf = sim.info; if (!inf?.activation) return;
+        mfs.e.show(inf.ze, inf.me); mfs.d.show(inf.zd, inf.md);
+        for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) $(`rc${i}${j}`).style.opacity = String(Math.min(0.9, inf.activation[i][j] * 1.2));
+      } };
+  }
+
+  // Aprendizaje por refuerzo
+  {
+    const LAB = DATA.tabularLab;
+    let trainer = null, running = false, rate = "fast", preview = null, previewQ = null, mode = "train", agentKey = "q";
+    const newTrainer = () => { trainer = C.makeTabularTrainer({ method: $("rlMethod").value, episodes: LAB.episodes, evalEvery: LAB.evalEvery, seed: (Math.random() * 1e9) | 0 }); previewQ = trainer.Q; preview = C.makeTabularPolicy(previewQ); };
+    newTrainer();
+    // Controlador de la escena: en «Ver cada intento» la escena ES el entrenamiento (con
+    // exploración); en «Rápido» muestra la política actual sin explorar.
+    const live = { reset() {}, act() { return { force: 0, info: null }; } };
+    const sceneCtrl = { reset() { preview.reset(); }, act(s) { return preview.act(s); } };
+    const setRun = (on) => { running = on && !trainer.done(); $("rlRun").textContent = running ? "⏸ Pausar" : trainer.episode ? "▶ Seguir" : "▶ Entrenar"; };
+    $("rlRun").addEventListener("click", () => { if (trainer.done()) return; setRun(!running); applyScene(); });
+    $("rlRestart").addEventListener("click", () => { newTrainer(); setRun(false); applyScene(); drawCurve(); drawMap(); });
+    $("rlMethod").addEventListener("change", () => { newTrainer(); setRun(false); applyScene(); drawCurve(); drawMap(); });
+    $("rlSpeed").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; rate = b.dataset.rate; for (const x of $("rlSpeed").children) x.setAttribute("aria-pressed", String(x === b)); applyScene(); });
+    $("rlMode").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; mode = b.dataset.mode; for (const x of $("rlMode").children) x.setAttribute("aria-pressed", String(x === b)); $("rlTrain").hidden = mode !== "train"; $("rlLab").hidden = mode !== "lab"; applyScene(); });
+    function liveTraining() { return mode === "train" && rate === "live" && running; }
+    function applyScene() {
+      if (current !== "rl") return;
+      tabs.rl.silentFail = mode === "train";
+      if (mode === "lab") { sim.ctrl = labPolicy(); $("badge").textContent = DATA.agents[agentKey].name; }
+      else if (liveTraining()) { sim.ctrl = live; $("badge").textContent = "Entrenando · intento en vivo"; }
+      else { sim.ctrl = sceneCtrl; $("badge").textContent = trainer.episode ? `Tu agente · tras ${trainer.episode.toLocaleString("es")} intentos` : "Tu agente · sin entrenar"; }
+      $("rlStageNote").textContent = mode === "train" ? (liveTraining() ? "Arriba ves cada intento de práctica, con sus exploraciones al azar." : "Arriba ves lo que hace hoy tu agente, sin explorar.") : "";
+      resetSim();
+    }
+    const labCache = {};
+    const labPolicy = () => {
+      const a = DATA.agents[agentKey];
+      return labCache[agentKey] ??= a.kind === "tabla" ? C.makeTabularPolicy(a.policy.q_table.map((r) => Float64Array.from(r))) : C.makeNetPolicy(a.policy);
+    };
+    // Paso a paso en vivo: la física del intento la lleva el entrenador; la escena la copia.
+    function liveStep() {
+      const out = trainer.stepOnce();
+      sim.s = out.s; sim.force = out.force; sim.t = (trainer.current?.t ?? 0) * TAU; sim.steps++;
+      const h = sim.hist; h.th[h.i] = out.s[2] * DEG; h.x[h.i] = out.s[0]; h.f[h.i] = out.force; h.i = (h.i + 1) % HIST; h.n = Math.min(HIST, h.n + 1);
+      if (out.done) { sim.t = 0; h.n = 0; if (trainer.done()) { setRun(false); applyScene(); } }
+    }
+    // Pestañas de agentes del laboratorio
+    $("agents").innerHTML = Object.entries(DATA.agents).map(([k, a]) => `<button class="agent" type="button" data-agent="${k}" aria-pressed="${k === agentKey}"><b>${a.name}</b><span>sobrevive ${fmt(a.survival * 100, 0)} % de las pruebas</span></button>`).join("");
+    $("agents").addEventListener("click", (e) => { const b = e.target.closest(".agent"); if (!b) return; agentKey = b.dataset.agent; for (const x of $("agents").children) x.setAttribute("aria-pressed", String(x === b)); showAgent(); applyScene(); });
+    function showAgent() {
+      const a = DATA.agents[agentKey], ck = a.checkpoint.toLocaleString("es");
+      const what = a.kind === "tabla" ? "una tabla de 162 situaciones × 5 empujones" : a.policy.force_limit !== undefined ? "una red neuronal que elige una fuerza continua" : "una red neuronal que puntúa 5 empujones posibles";
+      $("agentInfo").innerHTML = `<b>${a.name}</b>: ${what}, guardada tras ${ck} ${a.unit} de práctica (semilla ${a.seed}). En las 50 pruebas de la charla, los agentes de este tipo llegaron a los 10 s en el <b>${fmt(a.survival * 100, 0)} %</b> de los casos (media de 10 semillas).`;
+      drawAgentCurve();
+    }
+    // Gráficas
+    const curveCv = $("rlCurve"), cctx = curveCv.getContext("2d");
+    function axes(g, W, H, dpr, xmax, xlabel) {
+      const L = 30 * dpr, B = H - 16 * dpr, T = 6 * dpr, R = W - 6 * dpr;
+      g.font = `${10 * dpr}px ${getComputedStyle(document.body).fontFamily}`; g.fillStyle = col.faint; g.strokeStyle = col.line; g.lineWidth = dpr;
+      for (const v of [0, 250, 500]) { const y = B - (v / 500) * (B - T); g.beginPath(); g.moveTo(L, y); g.lineTo(R, y); g.stroke(); g.textAlign = "right"; g.fillText(String(v), L - 4 * dpr, y + 3 * dpr); }
+      g.textAlign = "left"; g.fillText("0", L, H - 3 * dpr); g.textAlign = "right"; g.fillText(`${xmax.toLocaleString("es")} ${xlabel}`, R, H - 3 * dpr);
+      return { X: (x) => L + (x / xmax) * (R - L), Y: (y) => B - (Math.max(0, Math.min(500, y)) / 500) * (B - T), L, R, T, B };
+    }
+    function drawCurve() {
+      const dpr = fitCanvas(curveCv), W = curveCv.width, H = curveCv.height, g = cctx;
+      g.clearRect(0, 0, W, H);
+      const ax = axes(g, W, H, dpr, LAB.episodes, "intentos"), runs = LAB[trainer.cfg.method], n = runs[0].x.length;
+      // banda: mínimo y máximo de los 10 agentes del laboratorio
+      g.fillStyle = col.sunk; g.beginPath();
+      for (let i = 0; i < n; i++) { const v = Math.max(...runs.map((r) => r.y[i])); i ? g.lineTo(ax.X(runs[0].x[i]), ax.Y(v)) : g.moveTo(ax.X(runs[0].x[i]), ax.Y(v)); }
+      for (let i = n - 1; i >= 0; i--) g.lineTo(ax.X(runs[0].x[i]), ax.Y(Math.min(...runs.map((r) => r.y[i]))));
+      g.closePath(); g.fill();
+      // intentos de práctica (media móvil de 100)
+      const ret = trainer.history.returns;
+      if (ret.length > 1) {
+        g.strokeStyle = col.faint; g.lineWidth = 1.2 * dpr; g.beginPath();
+        const stepN = Math.max(1, Math.floor(ret.length / 400)); let acc = 0; const win = []; let first = true;
+        for (let i = 0; i < ret.length; i++) { win.push(ret[i]); acc += ret[i]; if (win.length > 100) acc -= win.shift(); if (i % stepN === 0) { const y = ax.Y(acc / win.length), xx = ax.X(i + 1); first ? g.moveTo(xx, y) : g.lineTo(xx, y); first = false; } }
+        g.stroke();
+      }
+      const ev = trainer.history.evals;
+      if (ev.length) {
+        g.strokeStyle = col.orange; g.fillStyle = col.orange; g.lineWidth = 2.2 * dpr; g.beginPath();
+        ev.forEach(([x, y], i) => (i ? g.lineTo(ax.X(x), ax.Y(y)) : g.moveTo(ax.X(x), ax.Y(y)))); g.stroke();
+        const [lx, ly] = ev[ev.length - 1]; g.beginPath(); g.arc(ax.X(lx), ax.Y(ly), 3.5 * dpr, 0, 7); g.fill();
+      }
+      g.strokeStyle = col.ink; g.globalAlpha = 0.35; g.lineWidth = dpr; g.beginPath(); g.moveTo(ax.X(trainer.episode), ax.T); g.lineTo(ax.X(trainer.episode), ax.B); g.stroke(); g.globalAlpha = 1;
+    }
+    const agentCv = $("agentCurve"), actx = agentCv.getContext("2d");
+    function drawAgentCurve() {
+      const a = DATA.agents[agentKey], dpr = fitCanvas(agentCv), W = agentCv.width, H = agentCv.height, g = actx;
+      g.clearRect(0, 0, W, H);
+      const xmax = Math.max(a.checkpoint, a.curve.x[a.curve.x.length - 1]), ax = axes(g, W, H, dpr, xmax, a.unit);
+      g.strokeStyle = col.orange; g.lineWidth = 2 * dpr; g.beginPath();
+      a.curve.x.forEach((x, i) => (i ? g.lineTo(ax.X(x), ax.Y(a.curve.y[i])) : g.moveTo(ax.X(x), ax.Y(a.curve.y[i])))); g.stroke();
+      g.strokeStyle = col.ink; g.lineWidth = 1.5 * dpr; g.setLineDash([4 * dpr, 3 * dpr]); g.beginPath(); g.moveTo(ax.X(a.checkpoint), ax.T); g.lineTo(ax.X(a.checkpoint), ax.B); g.stroke(); g.setLineDash([]);
+    }
+    // Mapa de la política: casillas de θ (6) × θ̇ (3) con el carro en la caja central.
+    const TH = ["< −6°", "−6° a −1°", "−1° a 0°", "0° a 1°", "1° a 6°", "> 6°"], TD = ["cae ← rápido", "casi quieto", "cae → rápido"];
+    $("pmap").innerHTML = `<div></div>${TH.map((t) => `<div class="h">${t}</div>`).join("")}` + TD.map((t, j) => `<div class="rh">${t}</div>${TH.map((_, i) => `<div class="c" id="pm${i}${j}">?</div>`).join("")}`).join("");
+    const ARROWS = ["←←", "←", "·", "→", "→→"];
+    function drawMap() {
+      for (let i = 0; i < 6; i++) for (let j = 0; j < 3; j++) {
+        const box = ((1 * 3 + 1) * 6 + i) * 3 + j, row = trainer.Q[box], el = $(`pm${i}${j}`);
+        if (trainer.visits[box] === 0) { el.textContent = "?"; el.style.background = ""; el.style.color = ""; continue; }
+        const a = C.greedyAction(row), strength = Math.abs(C.FORCE_LEVELS[a]) / 10;
+        el.textContent = ARROWS[a]; el.style.color = col.ink;
+        el.style.background = `color-mix(in srgb, ${col.orange} ${Math.round(18 + 40 * strength)}%, ${col.sunk})`;
+      }
+    }
+    function stats() {
+      const best = trainer.best.mean > -Infinity ? `${fmt(trainer.best.mean, 0)} pasos` : "—";
+      const last = trainer.history.evals.at(-1);
+      $("rlStat").innerHTML = `<span>intentos <b>${trainer.episode.toLocaleString("es")}</b> / ${LAB.episodes.toLocaleString("es")}</span><span>exploración <b>${fmt(trainer.epsilon() * 100, 0)} %</b></span><span>última prueba <b>${last ? fmt(last[1], 0) + " pasos" : "—"}</b></span><span>mejor <b>${best}</b></span>`;
+    }
+    let lastDraw = 0;
+    tabs.rl = { name: "Aprendizaje", speed: 1, color: () => col.orange, controller: () => sceneCtrl, silentFail: false,
+      enter() { applyScene(); drawCurve(); drawMap(); showAgent(); },
+      redraw() { drawCurve(); drawMap(); drawAgentCurve(); },
+      onFail() { if (mode === "train") setTimeout(() => { if (current === "rl" && sim.failed) resetSim(); }, 900); },
+      failHint: () => (mode === "lab" ? "Prueba otro inicio u otro agente." : "Sigue entrenando y vuelve a mirar."),
+      // Entrenamiento rápido: varios intentos por fotograma, sin dibujarlos.
+      tick(dtReal) {
+        if (!running || mode !== "train") return false;
+        if (rate === "live") { if (sim.paused) return true; const n = Math.max(1, Math.round((dtReal * sim.speed) / TAU)); for (let k = 0; k < Math.min(n, 10); k++) { liveStep(); if (!running) break; } return true; }
+        const t0 = performance.now(); let before = trainer.episode;
+        // Tope de intentos por fotograma: así la curva crece a la vista (~10 s en total).
+        let k = 0;
+        while (k++ < 12 && performance.now() - t0 < 8 && !trainer.done()) trainer.trainEpisode();
+        if (trainer.done()) { setRun(false); applyScene(); }
+        else if (Math.floor(trainer.episode / 250) !== Math.floor(before / 250)) $("badge").textContent = `Tu agente · tras ${trainer.episode.toLocaleString("es")} intentos`;
+        return false;
+      },
+      frame(now) { if (now - lastDraw > 120) { lastDraw = now; stats(); drawCurve(); drawMap(); } },
+    };
+  }
+
+  // ------------------------------------------------------------------ cambio de pestaña
+  function selectTab(name) {
+    if (!tabs[name]) name = "pid";
+    current = name;
+    for (const b of $("tabs").children) b.setAttribute("aria-selected", String(b.dataset.tab === name));
+    for (const p of document.querySelectorAll("[data-panel]")) p.hidden = p.dataset.panel !== name;
+    sim.ctrl = tabs[name].controller();
+    $("badge").textContent = tabs[name].name;
+    setSpeed(tabs[name].speed);
+    store.set("cp-tab", name);
+    resetSim();
+    tabs[name].enter?.();
+  }
+  $("tabs").addEventListener("click", (e) => { const b = e.target.closest(".tab"); if (b) selectTab(b.dataset.tab); });
+
+  // ------------------------------------------------------------------ bucle principal
+  let lastT = performance.now(), acc = 0;
+  function loop(now) {
+    const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+    const tab = tabs[current];
+    const handled = tab.tick?.(dt);
+    if (!handled && !sim.paused && !sim.failed) {
+      acc += dt * sim.speed;
+      let n = 0;
+      while (acc >= TAU && n < 12 && !sim.failed) { simStep(); acc -= TAU; n++; }
+      if (n === 12) acc = 0;
+    } else acc = 0;
+    if (sim.impulseFlash > 0) sim.impulseFlash -= dt;
+    drawSim(); drawStrip(); readout();
+    tab.frame?.(now);
+    requestAnimationFrame(loop);
+  }
+  const hash = location.hash.replace("#", "");
+  selectTab(tabs[hash] ? hash : store.get("cp-tab", "pid"));
+  requestAnimationFrame(loop);
+})();
+</script>
