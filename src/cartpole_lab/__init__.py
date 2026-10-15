@@ -10,6 +10,7 @@ Módulos:
     seeding       semillas globales
     controllers   PID, LQR, MPC, fuzzy (Fase 1, pasos 3-6)
     rl            Q-learning, SARSA, DQN, actor-crítico (Fase 2)
+    teaching      utilidades de los notebooks de la charla (Fase 4)
 """
 
 from cartpole_lab.cost import QuadraticCost

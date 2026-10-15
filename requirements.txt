@@ -4,8 +4,8 @@
 # Se fijan las dependencias directas del proyecto y las transitivas del simulador:
 # el núcleo físico (gymnasium + sus dependencias) debe ser idéntico en cualquier
 # máquina para que los resultados sean reproducibles.
-# Las librerías de pasos posteriores (p. ej. la exportación a ONNX) se añadirán aquí,
-# con su pin, cuando se decida e implemente cada paso.
+# Toda librería nueva se añade aquí con su pin (==). La exportación de pesos es JSON plano y no
+# necesita librerías extra; ONNX se descartó (docs/11_exportacion.md).
 
 # --- Simulador (Fase 1) -------------------------------------------------------
 gymnasium==1.3.0
