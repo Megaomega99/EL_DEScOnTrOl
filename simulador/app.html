@@ -56,7 +56,8 @@
     -webkit-mask: var(--logo) center / contain no-repeat; mask: var(--logo) center / contain no-repeat; }
   .top h1 { font-size: 1.25rem; }
   .top .sub { color: var(--soft); font-size: 0.875rem; }
-  .top-text { min-width: 0; border-left: 1px solid var(--line); padding-left: 14px; }
+  .top-text { min-width: 0; flex: 1; border-left: 1px solid var(--line); padding-left: 14px; }
+  .btn.theme { flex: none; font-size: 0.8125rem; min-height: 34px; padding: 5px 11px; }
 
   .layout { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
   .panel-col, .stage { min-width: 0; }
@@ -198,6 +199,7 @@
       <h1>Simulador Cart Pole</h1>
       <p class="sub">El mismo péndulo de la charla, con los controladores y agentes del laboratorio.</p>
     </div>
+    <button class="btn theme" id="btnTheme" type="button" aria-label="Cambiar tema">Tema: auto</button>
   </header>
 
   <div class="layout">
@@ -516,12 +518,15 @@
   function setSpeed(v) { sim.speed = v; for (const b of $("speedSeg").children) b.setAttribute("aria-pressed", String(parseFloat(b.dataset.speed) === v)); }
   $("speedSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { setSpeed(parseFloat(b.dataset.speed)); tabs[current].speed = sim.speed; } });
   $("initSel").addEventListener("change", resetSim);
-  // Tocar la mitad izquierda o derecha del dibujo también empuja (salvo en «Tú», que usa los botones).
-  $("canvasWrap").addEventListener("pointerdown", (e) => {
-    if (current === "tu" || e.target.closest("button")) return;
-    const r = $("canvasWrap").getBoundingClientRect();
-    push(e.clientX - r.left < r.width / 2 ? -1 : 1);
-  });
+  // Los empujones solo salen de los botones: tocar el dibujo al desplazarse en el celular no debe empujar.
+  // Con la simulación en pausa, un cambio de parámetros recalcula lo que el controlador haría en el
+  // estado congelado (plan del MPC, fuerza del LQR, reglas del fuzzy) sin avanzar el tiempo.
+  function refreshInfo(tab) {
+    if (current !== tab || !sim.ctrl || sim.failed) return;
+    const out = sim.ctrl.act(sim.s);
+    sim.info = out.info;
+    tabs[tab].frame?.(performance.now());
+  }
 
   // ------------------------------------------------------------------ dibujo del carro-péndulo
   const simCanvas = $("sim"), sctx = simCanvas.getContext("2d");
@@ -621,6 +626,20 @@
 
   // ------------------------------------------------------------------ pestañas
   const tabs = {};
+
+  // Tema: automático (el del sistema o del visor), claro u oscuro; se recuerda en este navegador.
+  {
+    const MODES = ["auto", "light", "dark"], NAMES = { auto: "auto", light: "claro", dark: "oscuro" };
+    const hostTheme = document.documentElement.getAttribute("data-theme");
+    let mode = store.get("cp-theme", "auto");
+    const apply = () => {
+      if (mode === "auto") { if (hostTheme) document.documentElement.setAttribute("data-theme", hostTheme); else document.documentElement.removeAttribute("data-theme"); }
+      else document.documentElement.setAttribute("data-theme", mode);
+      $("btnTheme").textContent = `Tema: ${NAMES[mode]}`;
+    };
+    $("btnTheme").addEventListener("click", () => { mode = MODES[(MODES.indexOf(mode) + 1) % MODES.length]; store.set("cp-theme", mode); apply(); });
+    apply();
+  }
   let current = null;
 
   // Tú
@@ -673,7 +692,7 @@
   {
     const def = { xMax: 0.5 * C.P.xThreshold, thMax: Math.acos(0.99), fMax: C.P.forceMag }; // regla de Bryson del repo
     const w = Object.assign({}, def), K = new Float64Array(4), ctrl = C.makeLQR(K), sl = {};
-    const recompute = () => { const b = C.brysonWeights(w.xMax, w.thMax, w.fMax); K.set(C.dlqr(b.q, b.r).K); showK(); };
+    const recompute = () => { const b = C.brysonWeights(w.xMax, w.thMax, w.fMax); K.set(C.dlqr(b.q, b.r).K); showK(); if (sim.paused) refreshInfo("lqr"); };
     const showK = () => {
       $("lqrK").innerHTML = [
         [fmt(-K[2] / DEG, 2), "N por cada grado de inclinación"], [fmt(-K[3] / DEG, 2), "N por cada °/s de giro"],
@@ -704,7 +723,7 @@
     const def = { horizon: DATA.mpc.horizon, xLimit: DATA.mpc.xLimit, thetaLimit: DATA.mpc.thetaLimit, forceLimit: C.P.forceMag };
     const o = Object.assign({}, def), b = C.brysonWeights(0.5 * C.P.xThreshold, Math.acos(0.99), C.P.forceMag), sl = {};
     let mpc = null, rebuildTimer = 0, lastMs = 0, lastIt = 0;
-    const build = () => { mpc = C.makeMPC({ horizon: o.horizon, q: b.q, r: b.r, forceLimit: o.forceLimit, xLimit: o.xLimit, thetaLimit: o.thetaLimit, slackWeight: DATA.mpc.slackWeight }); };
+    const build = () => { mpc = C.makeMPC({ horizon: o.horizon, q: b.q, r: b.r, forceLimit: o.forceLimit, xLimit: o.xLimit, thetaLimit: o.thetaLimit, slackWeight: DATA.mpc.slackWeight }); if (sim.paused) refreshInfo("mpc"); };
     const rebuild = () => { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(build, 60); };
     build();
     // Envoltura: mide el tiempo de cálculo real en este dispositivo.
@@ -778,7 +797,7 @@
         handles.forEach((h) => { h.setAttribute("cx", X(c[+h.dataset.i])); h.setAttribute("cy", yT); });
       };
       let drag = null;
-      const move = (e) => { if (drag === null) return; const r = svg.getBoundingClientRect(), z = Z(((e.clientX - r.left) / r.width) * W); c[drag] = Math.max(c[drag - 1] + 0.05, Math.min(c[drag + 1] - 0.05, z)); layout(); };
+      const move = (e) => { if (drag === null) return; const r = svg.getBoundingClientRect(), z = Z(((e.clientX - r.left) / r.width) * W); c[drag] = Math.max(c[drag - 1] + 0.05, Math.min(c[drag + 1] - 0.05, z)); layout(); if (sim.paused) refreshInfo("fuzzy"); };
       svg.addEventListener("pointerdown", (e) => { const h = e.target.closest(".handle"); if (!h) return; drag = +h.dataset.i; svg.setPointerCapture(e.pointerId); e.preventDefault(); });
       svg.addEventListener("pointermove", move);
       const up = () => { drag = null; };
@@ -796,7 +815,7 @@
       ["kp_x", "Lazo del carro · distancia", 0, 0.5, (v) => fmt(v, 3)],
       ["kd_x", "Lazo del carro · velocidad", 0, 0.5, (v) => fmt(v, 3)],
     ];
-    for (const [key, label, min, max, f] of defs) sl[key] = slider($("fuzzySliders"), { id: key, label, min, max, value: g[key], fmt: f, onInput: (v) => { g[key] = v; } });
+    for (const [key, label, min, max, f] of defs) sl[key] = slider($("fuzzySliders"), { id: key, label, min, max, value: g[key], fmt: f, onInput: (v) => { g[key] = v; if (sim.paused) refreshInfo("fuzzy"); } });
     $("fuzzyReset").addEventListener("click", () => { for (const k in sl) sl[k].set(DATA.fuzzy[k]); for (const k of ["e", "d"]) { centers[k].splice(0, 5, -1, -0.5, 0, 0.5, 1); mfs[k].layout(); } resetSim(); });
     tryList("fuzzyTry", [
       "Junta los triángulos de <b>inclinación</b> hacia el centro: «poco inclinado» empieza antes.",

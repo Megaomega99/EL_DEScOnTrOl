@@ -14,7 +14,8 @@ equilibrar el péndulo a mano.
 
 ```bash
 python simulador/verify_core.py   # requiere Node
-python simulador/build.py         # escribe simulador/dist/simulador.html
+python simulador/build.py         # escribe simulador/dist/simulador.html (artifact de Claude)
+python simulador/build.py --standalone   # documento completo para GitHub Pages u otro servidor
 ```
 
 Resultado de `verify_core.py` (la máxima discrepancia frente a Python):
@@ -25,3 +26,6 @@ Resultado de `verify_core.py` (la máxima discrepancia frente a Python):
 - Primera fuerza del MPC frente a CVXPY/Clarabel: 1·10⁻⁴ N.
 - Acciones tabulares: 0 discrepancias.
 - Redes: 4·10⁻¹⁴.
+
+Para alojarlo fuera de Claude se usa la versión `--standalone` en un servidor web
+(GitHub Pages, por ejemplo). Google Drive no sirve: muestra el archivo HTML, no lo ejecuta.

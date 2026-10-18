@@ -6,7 +6,10 @@ results/ (ganancias del PID y del fuzzy, configuración del MPC, tablas Q, redes
 actor-crítico, curvas de aprendizaje), los incrusta junto con core.js en app.html y
 escribe una sola página que funciona sin servidor, también en el celular.
 
-Uso:  python simulador/build.py [salida.html]      (por defecto simulador/dist/simulador.html)
+Uso:  python simulador/build.py [salida.html]               página para publicar como artifact de Claude
+      python simulador/build.py --standalone [salida.html]  documento completo, para cualquier servidor web
+                                                            (p. ej. GitHub Pages). Google Drive no sirve:
+                                                            muestra el archivo, no lo ejecuta.
 """
 
 from __future__ import annotations
@@ -121,8 +124,27 @@ def build_data() -> dict:
     }
 
 
+STANDALONE_RESET = (
+    "<style>:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}"
+    "img{max-width:100%}[hidden]{display:none!important}</style>"
+)
+
+
+def standalone(page: str) -> str:
+    """Envuelve la página en un documento completo: el artifact recibe su <head> de la plataforma,
+    un servidor web cualquiera no. Las etiquetas de cabecera de app.html pasan al <head>."""
+    head_end = page.index("<style>")
+    head = "\n".join(line for line in page[:head_end].splitlines() if "claude:" not in line)
+    return ('<!doctype html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
+            f"{head}\n{STANDALONE_RESET}\n</head>\n<body>\n{page[head_end:]}\n</body>\n</html>\n")
+
+
 def main() -> None:
-    out = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "dist" / "simulador.html"
+    args = [a for a in sys.argv[1:] if a != "--standalone"]
+    is_standalone = len(args) != len(sys.argv) - 1
+    default = "simulador-standalone.html" if is_standalone else "simulador.html"
+    out = Path(args[0]) if args else HERE / "dist" / default
     page = (HERE / "app.html").read_text(encoding="utf-8")
     core = (HERE / "core.js").read_text(encoding="utf-8")
     data = json.dumps(build_data(), ensure_ascii=False, separators=(",", ":"))
@@ -130,6 +152,8 @@ def main() -> None:
         if page.count(marker) != 1:
             raise SystemExit(f"app.html debe contener {marker} exactamente una vez")
     page = page.replace("/*__CORE__*/", core).replace("/*__DATA__*/", f"const DATA = {data};")
+    if is_standalone:
+        page = standalone(page)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(page, encoding="utf-8")
     print(f"{out}  ({out.stat().st_size / 1024:.0f} KB)")
